@@ -29,29 +29,43 @@ public partial class Form1 : Form
     {
         OpenFileDialog ofd = new OpenFileDialog();
 
-        ofd.Filter = "Catalog File (*.catalog)|*.catalog|All Files (*.*)|*.*";
-        ofd.Title = "catalog 파일 선택";
+        ofd.Title = "catalog 파일 아무거나 1개 선택";
+        ofd.Filter = "Catalog File (*.catalog)|*.catalog";
 
         if (ofd.ShowDialog() == DialogResult.OK)
         {
             dataList.Clear();
 
-            foreach (string line in File.ReadLines(ofd.FileName))
+            // 선택한 catalog가 들어있는 폴더
+            string folderPath = Path.GetDirectoryName(ofd.FileName);
+
+            // 같은 폴더 안의 모든 .catalog 파일 가져오기
+            string[] catalogFiles = Directory.GetFiles(
+                folderPath,
+                "*.catalog",
+                SearchOption.TopDirectoryOnly
+            );
+
+            foreach (string catalogFile in catalogFiles)
             {
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
-
-                DonkeyData data =
-                    JsonConvert.DeserializeObject<DonkeyData>(line);
-
-                if (data != null)
+                foreach (string line in File.ReadLines(catalogFile))
                 {
-                    dataList.Add(data);
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    DonkeyData data =
+                        JsonConvert.DeserializeObject<DonkeyData>(line);
+
+                    if (data != null)
+                    {
+                        dataList.Add(data);
+                    }
                 }
             }
 
             MessageBox.Show(
-                "Catalog 불러오기 완료\n" +
+                "Catalog 전체 불러오기 완료\n" +
+                "Catalog 파일 개수 : " + catalogFiles.Length + "\n" +
                 "데이터 개수 : " + dataList.Count
             );
         }
