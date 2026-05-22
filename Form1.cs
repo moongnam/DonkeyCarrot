@@ -1,13 +1,87 @@
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Windows.Forms;
+
 namespace DonkeyCarrot;
 
 public partial class Form1 : Form
 {
+    // catalog 데이터를 저장할 리스트
+    List<DonkeyData> dataList = new List<DonkeyData>();
+
+    // 이미지 파일 경로를 저장할 리스트
+    List<string> imageList = new List<string>();
+
     public Form1()
     {
         InitializeComponent();
+
+        // 버튼 클릭 이벤트 연결
+        btnLoadCatalog.Click += btnLoadCatalog_Click;
+        btnLoadImages.Click += btnLoadImages_Click;
+    }
+
+    // catalog 파일 불러오기 버튼
+    private void btnLoadCatalog_Click(object sender, EventArgs e)
+    {
+        OpenFileDialog ofd = new OpenFileDialog();
+
+        ofd.Filter = "Catalog File (*.catalog)|*.catalog|All Files (*.*)|*.*";
+        ofd.Title = "catalog 파일 선택";
+
+        if (ofd.ShowDialog() == DialogResult.OK)
+        {
+            dataList.Clear();
+
+            foreach (string line in File.ReadLines(ofd.FileName))
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                DonkeyData data =
+                    JsonConvert.DeserializeObject<DonkeyData>(line);
+
+                if (data != null)
+                {
+                    dataList.Add(data);
+                }
+            }
+
+            MessageBox.Show(
+                "Catalog 불러오기 완료\n" +
+                "데이터 개수 : " + dataList.Count
+            );
+        }
+    }
+
+    // 이미지 폴더 불러오기 버튼
+    private void btnLoadImages_Click(object sender, EventArgs e)
+    {
+        FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+        fbd.Description = "images 폴더 선택";
+
+        if (fbd.ShowDialog() == DialogResult.OK)
+        {
+            imageList.Clear();
+
+            string[] jpgFiles =
+                Directory.GetFiles(fbd.SelectedPath, "*.jpg");
+
+            string[] pngFiles =
+                Directory.GetFiles(fbd.SelectedPath, "*.png");
+
+            imageList.AddRange(jpgFiles);
+            imageList.AddRange(pngFiles);
+
+            MessageBox.Show(
+                "이미지 불러오기 완료\n" +
+                "이미지 개수 : " + imageList.Count
+            );
+        }
     }
 
     private void btnTrain_Click_1(object sender, EventArgs e)
@@ -65,6 +139,7 @@ public partial class Form1 : Form
             if (!string.IsNullOrEmpty(ev.Data))
             {
                 string log = ev.Data;
+
                 // 영어를 한글로 변환
                 log = log.Replace("ERROR", "오류");
                 log = log.Replace("failed", "실패");
@@ -82,6 +157,21 @@ public partial class Form1 : Form
 
         processs.BeginOutputReadLine();
         processs.BeginErrorReadLine();
-
     }
+}
+
+// catalog JSON 데이터 클래스
+public class DonkeyData
+{
+    // 이미지 파일 이름
+    [JsonProperty("cam/image_array")]
+    public string ImagePath { get; set; }
+
+    // 조향값(angle)
+    [JsonProperty("user/angle")]
+    public float Angle { get; set; }
+
+    // 속도값(throttle)
+    [JsonProperty("user/throttle")]
+    public float Throttle { get; set; }
 }
