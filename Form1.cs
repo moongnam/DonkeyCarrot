@@ -22,7 +22,7 @@ public partial class Form1 : Form
         psi.Arguments = "python manage.py train";
 
         // Python 프로젝트 위치
-        psi.WorkingDirectory = @"c:\mycar"; //파일 받아오면 그곳 위치로 입력되게 바꿀예정
+        psi.WorkingDirectory = @"c:\mycar"; //파일 받아오면 그곳 위치로 입력되게 바꿀 예정임
 
         // 로그 출력 받기
         psi.RedirectStandardOutput = true;
