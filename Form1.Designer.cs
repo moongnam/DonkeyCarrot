@@ -30,6 +30,12 @@ partial class Form1
     {
         tabcMain = new TabControl();
         tabPage1 = new TabPage();
+        lbl_ThrottleV = new Label();
+        lbl_Throttle = new Label();
+        lbl_AngleV = new Label();
+        lbl_Angle = new Label();
+        lbl_FrameV = new Label();
+        lbl_Frame = new Label();
         list_FileCheck = new ListBox();
         tbar_Dk = new TrackBar();
         btn_Retry = new Button();
@@ -46,12 +52,6 @@ partial class Form1
         tabp_Serve = new TabPage();
         txtLog = new TextBox();
         btnTrain = new Button();
-        lbl_Frame = new Label();
-        lbl_FrameV = new Label();
-        lbl_Angle = new Label();
-        lbl_AngleV = new Label();
-        lbl_Throttle = new Label();
-        lbl_ThrottleV = new Label();
         tabcMain.SuspendLayout();
         tabPage1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)tbar_Dk).BeginInit();
@@ -99,6 +99,67 @@ partial class Form1
         tabPage1.TabIndex = 0;
         tabPage1.Text = "tabPage1";
         tabPage1.UseVisualStyleBackColor = true;
+        // 
+        // lbl_ThrottleV
+        // 
+        lbl_ThrottleV.AutoSize = true;
+        lbl_ThrottleV.Font = new Font("맑은 고딕", 15F);
+        lbl_ThrottleV.Location = new Point(2071, 115);
+        lbl_ThrottleV.Name = "lbl_ThrottleV";
+        lbl_ThrottleV.Size = new Size(45, 54);
+        lbl_ThrottleV.TabIndex = 19;
+        lbl_ThrottleV.Text = "0";
+        lbl_ThrottleV.Click += label5_Click;
+        // 
+        // lbl_Throttle
+        // 
+        lbl_Throttle.AutoSize = true;
+        lbl_Throttle.Font = new Font("맑은 고딕", 15F);
+        lbl_Throttle.Location = new Point(1882, 115);
+        lbl_Throttle.Name = "lbl_Throttle";
+        lbl_Throttle.Size = new Size(173, 54);
+        lbl_Throttle.TabIndex = 18;
+        lbl_Throttle.Text = "Throttle:";
+        // 
+        // lbl_AngleV
+        // 
+        lbl_AngleV.AutoSize = true;
+        lbl_AngleV.Font = new Font("맑은 고딕", 15F);
+        lbl_AngleV.Location = new Point(1758, 115);
+        lbl_AngleV.Name = "lbl_AngleV";
+        lbl_AngleV.Size = new Size(45, 54);
+        lbl_AngleV.TabIndex = 17;
+        lbl_AngleV.Text = "0";
+        // 
+        // lbl_Angle
+        // 
+        lbl_Angle.AutoSize = true;
+        lbl_Angle.Font = new Font("맑은 고딕", 15F);
+        lbl_Angle.Location = new Point(1616, 115);
+        lbl_Angle.Name = "lbl_Angle";
+        lbl_Angle.Size = new Size(136, 54);
+        lbl_Angle.TabIndex = 16;
+        lbl_Angle.Text = "Angle:";
+        // 
+        // lbl_FrameV
+        // 
+        lbl_FrameV.AutoSize = true;
+        lbl_FrameV.Font = new Font("맑은 고딕", 15F);
+        lbl_FrameV.Location = new Point(1438, 115);
+        lbl_FrameV.Name = "lbl_FrameV";
+        lbl_FrameV.Size = new Size(45, 54);
+        lbl_FrameV.TabIndex = 15;
+        lbl_FrameV.Text = "0";
+        // 
+        // lbl_Frame
+        // 
+        lbl_Frame.AutoSize = true;
+        lbl_Frame.Font = new Font("맑은 고딕", 15F);
+        lbl_Frame.Location = new Point(1289, 115);
+        lbl_Frame.Name = "lbl_Frame";
+        lbl_Frame.Size = new Size(143, 54);
+        lbl_Frame.TabIndex = 14;
+        lbl_Frame.Text = "Frame:";
         // 
         // list_FileCheck
         // 
@@ -177,6 +238,7 @@ partial class Form1
         btn_BigL.TabIndex = 5;
         btn_BigL.Text = "<";
         btn_BigL.UseVisualStyleBackColor = true;
+        btn_BigL.Click += btn_BigL_Click;
         // 
         // btn_BigR
         // 
@@ -214,6 +276,7 @@ partial class Form1
         btnLoadCatalog.TabIndex = 0;
         btnLoadCatalog.Text = "카탈로그 파일 \r\n불러오기\r\n";
         btnLoadCatalog.UseVisualStyleBackColor = true;
+        btnLoadCatalog.Click += btnLoadCatalog_Click_1;
         // 
         // tabp_Serve
         // 
@@ -248,67 +311,6 @@ partial class Form1
         btnTrain.Text = "학습 시작";
         btnTrain.UseVisualStyleBackColor = true;
         btnTrain.Click += btnTrain_Click_1;
-        // 
-        // lbl_Frame
-        // 
-        lbl_Frame.AutoSize = true;
-        lbl_Frame.Font = new Font("맑은 고딕", 15F);
-        lbl_Frame.Location = new Point(1289, 115);
-        lbl_Frame.Name = "lbl_Frame";
-        lbl_Frame.Size = new Size(143, 54);
-        lbl_Frame.TabIndex = 14;
-        lbl_Frame.Text = "Frame:";
-        // 
-        // lbl_FrameV
-        // 
-        lbl_FrameV.AutoSize = true;
-        lbl_FrameV.Font = new Font("맑은 고딕", 15F);
-        lbl_FrameV.Location = new Point(1438, 115);
-        lbl_FrameV.Name = "lbl_FrameV";
-        lbl_FrameV.Size = new Size(45, 54);
-        lbl_FrameV.TabIndex = 15;
-        lbl_FrameV.Text = "0";
-        // 
-        // lbl_Angle
-        // 
-        lbl_Angle.AutoSize = true;
-        lbl_Angle.Font = new Font("맑은 고딕", 15F);
-        lbl_Angle.Location = new Point(1616, 115);
-        lbl_Angle.Name = "lbl_Angle";
-        lbl_Angle.Size = new Size(136, 54);
-        lbl_Angle.TabIndex = 16;
-        lbl_Angle.Text = "Angle:";
-        // 
-        // lbl_AngleV
-        // 
-        lbl_AngleV.AutoSize = true;
-        lbl_AngleV.Font = new Font("맑은 고딕", 15F);
-        lbl_AngleV.Location = new Point(1758, 115);
-        lbl_AngleV.Name = "lbl_AngleV";
-        lbl_AngleV.Size = new Size(45, 54);
-        lbl_AngleV.TabIndex = 17;
-        lbl_AngleV.Text = "0";
-        // 
-        // lbl_Throttle
-        // 
-        lbl_Throttle.AutoSize = true;
-        lbl_Throttle.Font = new Font("맑은 고딕", 15F);
-        lbl_Throttle.Location = new Point(1882, 115);
-        lbl_Throttle.Name = "lbl_Throttle";
-        lbl_Throttle.Size = new Size(173, 54);
-        lbl_Throttle.TabIndex = 18;
-        lbl_Throttle.Text = "Throttle:";
-        // 
-        // lbl_ThrottleV
-        // 
-        lbl_ThrottleV.AutoSize = true;
-        lbl_ThrottleV.Font = new Font("맑은 고딕", 15F);
-        lbl_ThrottleV.Location = new Point(2071, 115);
-        lbl_ThrottleV.Name = "lbl_ThrottleV";
-        lbl_ThrottleV.Size = new Size(45, 54);
-        lbl_ThrottleV.TabIndex = 19;
-        lbl_ThrottleV.Text = "0";
-        lbl_ThrottleV.Click += label5_Click;
         // 
         // Form1
         // 
