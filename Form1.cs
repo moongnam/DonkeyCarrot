@@ -34,21 +34,24 @@ public partial class Form1 : Form
     private void btnLoadCatalog_Click(object sender, EventArgs e)
     {
         FolderBrowserDialog fbd = new FolderBrowserDialog();
-        fbd.Description = "DonkeyCar data 폴더 선택";
+
+        fbd.Description = "data 폴더 선택";
+        fbd.InitialDirectory =
+            Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
         if (fbd.ShowDialog() == DialogResult.OK)
         {
             dataList.Clear();
 
-            string folderPath = fbd.SelectedPath;
+            string dataFolderPath = fbd.SelectedPath;
 
-            // tub 데이터 폴더 경로 저장
-            tubPath = folderPath;
+            // tub 경로 저장
+            tubPath = dataFolderPath;
 
-            // 현재 폴더부터 시작
-            DirectoryInfo currentDir = new DirectoryInfo(folderPath);
+            // 현재 폴더부터 manage.py 찾기
+            DirectoryInfo currentDir =
+                new DirectoryInfo(dataFolderPath);
 
-            // manage.py 찾기
             while (currentDir != null)
             {
                 string managePath =
@@ -61,20 +64,13 @@ public partial class Form1 : Form
                     break;
                 }
 
-                // 상위 폴더로 이동
+                // 상위 폴더 이동
                 currentDir = currentDir.Parent;
             }
 
-            // manage.py 못 찾은 경우
-            if (string.IsNullOrEmpty(projectPath))
-            {
-                MessageBox.Show("manage.py를 찾을 수 없습니다.");
-                return;
-            }
-
             string[] catalogFiles = Directory.GetFiles(
-                folderPath,
-                "catalog_*.catalog",
+                dataFolderPath,
+                "*.catalog",
                 SearchOption.TopDirectoryOnly
             );
 
@@ -89,13 +85,14 @@ public partial class Form1 : Form
                         JsonConvert.DeserializeObject<DonkeyData>(line);
 
                     if (data != null)
+                    {
                         dataList.Add(data);
+                    }
                 }
             }
 
             MessageBox.Show(
                 "Catalog 전체 불러오기 완료\n" +
-                "선택한 폴더 : " + folderPath + "\n" +
                 "Catalog 파일 개수 : " + catalogFiles.Length + "\n" +
                 "데이터 개수 : " + dataList.Count
             );
@@ -108,6 +105,8 @@ public partial class Form1 : Form
         FolderBrowserDialog fbd = new FolderBrowserDialog();
 
         fbd.Description = "images 폴더 선택";
+        fbd.InitialDirectory =
+            Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
         if (fbd.ShowDialog() == DialogResult.OK)
         {
@@ -131,6 +130,19 @@ public partial class Form1 : Form
 
     private void btnTrain_Click_1(object sender, EventArgs e)
     {
+        // WSL 경로 변환
+        string linuxProjectPath =
+            projectPath.Replace(
+                @"\\wsl.localhost\Ubuntu-22.04",
+                ""
+            );
+
+        string linuxTubPath =
+            tubPath.Replace(
+                @"\\wsl.localhost\Ubuntu-22.04",
+                ""
+            );
+
         // 새로운 프로세스 시작 정보 객체 생성
         ProcessStartInfo psi = new ProcessStartInfo();
 
@@ -139,7 +151,7 @@ public partial class Form1 : Form
 
         // 실행할 명령어 설정
         psi.Arguments =
-            "bash -c \"cd ~/mycar && source ~/miniconda3/bin/activate e2e_env && python manage.py train\"";
+            $"bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate e2e_env && python manage.py train --tub '{linuxTubPath}' --model donkeycarrot.model --type linear\"";
 
         // Python 프로젝트 위치
         psi.WorkingDirectory = projectPath;
