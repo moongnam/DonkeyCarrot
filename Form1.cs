@@ -180,11 +180,13 @@ public partial class Form1 : Form
                 log = log.Replace("Complete", "완료");
                 log = log.Replace("Model", "모델");
 
-                // 로그를 TextBox에 추가
-                Invoke(new Action(() =>
+                if (!IsDisposed && txtLog.IsHandleCreated)
                 {
-                    txtLog.AppendText(log + Environment.NewLine);
-                }));
+                    Invoke(new Action(() =>
+                    {
+                        txtLog.AppendText(log + Environment.NewLine);
+                    }));
+                }
             }
         };
 
