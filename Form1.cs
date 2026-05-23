@@ -15,6 +15,12 @@ public partial class Form1 : Form
     // 이미지 파일 경로를 저장할 리스트
     List<string> imageList = new List<string>();
 
+    // Python 프로젝트 경로
+    string projectPath = "";
+
+    // tub 데이터 폴더 경로
+    string tubPath = "";
+
     public Form1()
     {
         InitializeComponent();
@@ -35,6 +41,36 @@ public partial class Form1 : Form
             dataList.Clear();
 
             string folderPath = fbd.SelectedPath;
+
+            // tub 데이터 폴더 경로 저장
+            tubPath = folderPath;
+
+            // 현재 폴더부터 시작
+            DirectoryInfo currentDir = new DirectoryInfo(folderPath);
+
+            // manage.py 찾기
+            while (currentDir != null)
+            {
+                string managePath =
+                    Path.Combine(currentDir.FullName, "manage.py");
+
+                // manage.py 발견
+                if (File.Exists(managePath))
+                {
+                    projectPath = currentDir.FullName;
+                    break;
+                }
+
+                // 상위 폴더로 이동
+                currentDir = currentDir.Parent;
+            }
+
+            // manage.py 못 찾은 경우
+            if (string.IsNullOrEmpty(projectPath))
+            {
+                MessageBox.Show("manage.py를 찾을 수 없습니다.");
+                return;
+            }
 
             string[] catalogFiles = Directory.GetFiles(
                 folderPath,
@@ -98,14 +134,15 @@ public partial class Form1 : Form
         // 새로운 프로세스 시작 정보 객체 생성
         ProcessStartInfo psi = new ProcessStartInfo();
 
-        // 실행할 프로그램과 인자 설정
-        psi.FileName = "python";
+        // 실행할 명령어 설정 (wsl을 통해 Python 명령어 실행)
+        psi.FileName = "wsl";
 
         // 실행할 명령어 설정
-        psi.Arguments = "python manage.py train";
+        psi.Arguments =
+            "bash -c \"cd ~/mycar && source ~/miniconda3/bin/activate e2e_env && python manage.py train\"";
 
         // Python 프로젝트 위치
-        psi.WorkingDirectory = @"c:\mycar"; //파일 받아오면 그곳 위치로 입력되게 바꿀 예정임
+        psi.WorkingDirectory = projectPath;
 
         // 로그 출력 받기
         psi.RedirectStandardOutput = true;
