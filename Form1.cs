@@ -45,6 +45,29 @@ public partial class Form1 : Form
 
             string dataFolderPath = fbd.SelectedPath;
 
+            // tub 경로 저장
+            tubPath = dataFolderPath;
+
+            // 현재 폴더부터 manage.py 찾기
+            DirectoryInfo currentDir =
+                new DirectoryInfo(dataFolderPath);
+
+            while (currentDir != null)
+            {
+                string managePath =
+                    Path.Combine(currentDir.FullName, "manage.py");
+
+                // manage.py 발견
+                if (File.Exists(managePath))
+                {
+                    projectPath = currentDir.FullName;
+                    break;
+                }
+
+                // 상위 폴더 이동
+                currentDir = currentDir.Parent;
+            }
+
             string[] catalogFiles = Directory.GetFiles(
                 dataFolderPath,
                 "*.catalog",
@@ -107,6 +130,19 @@ public partial class Form1 : Form
 
     private void btnTrain_Click_1(object sender, EventArgs e)
     {
+        // WSL 경로 변환
+        string linuxProjectPath =
+            projectPath.Replace(
+                @"\\wsl.localhost\Ubuntu-22.04",
+                ""
+            );
+
+        string linuxTubPath =
+            tubPath.Replace(
+                @"\\wsl.localhost\Ubuntu-22.04",
+                ""
+            );
+
         // 새로운 프로세스 시작 정보 객체 생성
         ProcessStartInfo psi = new ProcessStartInfo();
 
@@ -115,7 +151,7 @@ public partial class Form1 : Form
 
         // 실행할 명령어 설정
         psi.Arguments =
-            "bash -c \"cd ~/mycar && source ~/miniconda3/bin/activate e2e_env && python manage.py train\"";
+            $"bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate e2e_env && python manage.py train --tub '{linuxTubPath}' --model donkeycarrot.model --type linear\"";
 
         // Python 프로젝트 위치
         psi.WorkingDirectory = projectPath;
