@@ -215,6 +215,11 @@ public partial class Form1 : Form
         processs.BeginOutputReadLine();
         processs.BeginErrorReadLine();
     }
+
+    private void label5_Click(object sender, EventArgs e)
+    {
+
+    }
 }
 
 // catalog JSON 데이터 클래스
