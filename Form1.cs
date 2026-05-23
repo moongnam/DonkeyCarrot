@@ -27,22 +27,18 @@ public partial class Form1 : Form
     // catalog 파일 불러오기 버튼
     private void btnLoadCatalog_Click(object sender, EventArgs e)
     {
-        OpenFileDialog ofd = new OpenFileDialog();
+        FolderBrowserDialog fbd = new FolderBrowserDialog();
+        fbd.Description = "DonkeyCar data 폴더 선택";
 
-        ofd.Title = "catalog 파일 아무거나 1개 선택";
-        ofd.Filter = "Catalog File (*.catalog)|*.catalog";
-
-        if (ofd.ShowDialog() == DialogResult.OK)
+        if (fbd.ShowDialog() == DialogResult.OK)
         {
             dataList.Clear();
 
-            // 선택한 catalog가 들어있는 폴더
-            string folderPath = Path.GetDirectoryName(ofd.FileName);
+            string folderPath = fbd.SelectedPath;
 
-            // 같은 폴더 안의 모든 .catalog 파일 가져오기
             string[] catalogFiles = Directory.GetFiles(
                 folderPath,
-                "*.catalog",
+                "catalog_*.catalog",
                 SearchOption.TopDirectoryOnly
             );
 
@@ -57,14 +53,13 @@ public partial class Form1 : Form
                         JsonConvert.DeserializeObject<DonkeyData>(line);
 
                     if (data != null)
-                    {
                         dataList.Add(data);
-                    }
                 }
             }
 
             MessageBox.Show(
                 "Catalog 전체 불러오기 완료\n" +
+                "선택한 폴더 : " + folderPath + "\n" +
                 "Catalog 파일 개수 : " + catalogFiles.Length + "\n" +
                 "데이터 개수 : " + dataList.Count
             );
