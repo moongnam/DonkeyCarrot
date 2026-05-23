@@ -129,8 +129,9 @@ public partial class Form1 : Form
     }
 
     private void btnTrain_Click_1(object sender, EventArgs e)
-    { 
-
+    {
+        //로그 초기화
+        txtLog.Clear();
 
         // WSL 경로 변환
         string linuxProjectPath = projectPath
