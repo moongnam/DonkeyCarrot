@@ -148,7 +148,7 @@ public partial class Form1 : Form
         // 실행할 명령어 설정
         psi.Arguments =
             $"-d Ubuntu-22.04 -- bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate e2e_env && python train.py --tub '{linuxTubPath}' --model donkeycarrot.model --type linear\"";
-        
+
         // 작업 디렉토리 설정 (WSL 내에서의 경로)
         psi.EnvironmentVariables["PATH"] =
             @"C:\Windows\System32";
