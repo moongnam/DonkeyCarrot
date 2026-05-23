@@ -132,7 +132,7 @@ public partial class Form1 : Form
     {
         //로그 초기화
         txtLog.Clear();
-
+     
         // WSL 경로 변환
         string linuxProjectPath = projectPath
             .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
