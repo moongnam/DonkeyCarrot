@@ -131,30 +131,27 @@ public partial class Form1 : Form
     private void btnTrain_Click_1(object sender, EventArgs e)
     {
         // WSL 경로 변환
-        string linuxProjectPath =
-            projectPath.Replace(
-                @"\\wsl.localhost\Ubuntu-22.04",
-                ""
-            );
+        string linuxProjectPath = projectPath
+            .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
+            .Replace("\\", "/");
 
-        string linuxTubPath =
-            tubPath.Replace(
-                @"\\wsl.localhost\Ubuntu-22.04",
-                ""
-            );
+        string linuxTubPath = tubPath
+            .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
+            .Replace("\\", "/");
 
         // 새로운 프로세스 시작 정보 객체 생성
         ProcessStartInfo psi = new ProcessStartInfo();
 
         // 실행할 명령어 설정 (wsl을 통해 Python 명령어 실행)
-        psi.FileName = "wsl";
+        psi.FileName = @"C:\Windows\System32\wsl.exe";
 
         // 실행할 명령어 설정
         psi.Arguments =
-            $"bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate e2e_env && python manage.py train --tub '{linuxTubPath}' --model donkeycarrot.model --type linear\"";
-
-        // Python 프로젝트 위치
-        psi.WorkingDirectory = projectPath;
+            $"-d Ubuntu-22.04 -- bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate e2e_env && python train.py --tub '{linuxTubPath}' --model donkeycarrot.model --type linear\"";
+        
+        // 작업 디렉토리 설정 (WSL 내에서의 경로)
+        psi.EnvironmentVariables["PATH"] =
+            @"C:\Windows\System32";
 
         // 로그 출력 받기
         psi.RedirectStandardOutput = true;
