@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq; // 🔍 LINQ 필터링 검색을 위해 추가
 using System.Windows.Forms;
+using System.Drawing;
 
 namespace DonkeyCarrot;
 
@@ -22,7 +23,6 @@ public partial class Form1 : Form
     // tub 데이터 폴더 경로
     string tubPath = "";
 
-    
     private int currentIndex = 0;
 
     public Form1()
@@ -33,11 +33,18 @@ public partial class Form1 : Form
         btnLoadCatalog.Click += btnLoadCatalog_Click;
         btnLoadImages.Click += btnLoadImages_Click;
 
-       
+        // Conda 환경 이름 입력 텍스트박스 초기 설정
+        txtCondaEnv.Text = "conda 환경 이름 입력";
+        txtCondaEnv.ForeColor = Color.Silver;
+
+        // 텍스트박스 포커스 이벤트 연결
+        txtCondaEnv.Enter += txtCondaEnv_Enter;
+        txtCondaEnv.Leave += txtCondaEnv_Leave;
+
         InitializeManagerEvents();
     }
 
-   
+
     private void DisplayCurrentData()
     {
         // 데이터 리스트가 비어 있으면 화면 갱신을 하지 않음
@@ -83,39 +90,45 @@ public partial class Form1 : Form
         }
     }
 
-   
+
     private void InitializeManagerEvents()
     {
         // > 버튼 : 다음 프레임 데이터로 1건 이동
-        btn_BigR.Click += (s, e) => {
+        btn_BigR.Click += (s, e) =>
+        {
             if (currentIndex < dataList.Count - 1) { currentIndex++; DisplayCurrentData(); }
         };
 
         // < 버튼 : 이전 프레임 데이터로 1건 이동
-        btn_BigL.Click += (s, e) => {
+        btn_BigL.Click += (s, e) =>
+        {
             if (currentIndex > 0) { currentIndex--; DisplayCurrentData(); }
         };
 
         // >> 버튼 : 다음 10번째 프레임으로 고속 점프
-        btn_SmallR.Click += (s, e) => {
+        btn_SmallR.Click += (s, e) =>
+        {
             currentIndex = Math.Min(currentIndex + 10, dataList.Count - 1);
             DisplayCurrentData();
         };
 
         // << 버튼 : 이전 10번째 프레임으로 고속 점프
-        btn_SmallL.Click += (s, e) => {
+        btn_SmallL.Click += (s, e) =>
+        {
             currentIndex = Math.Max(currentIndex - 10, 0);
             DisplayCurrentData();
         };
 
         // tbar_Dk : 트랙바 슬라이더 드래그 시 인덱스 변경 연동
-        tbar_Dk.Scroll += (s, e) => {
+        tbar_Dk.Scroll += (s, e) =>
+        {
             currentIndex = tbar_Dk.Value;
             DisplayCurrentData();
         };
 
         // list_FileCheck : 파일 목록에서 특정 항목 클릭 시 해당 프레임 갱신
-        list_FileCheck.SelectedIndexChanged += (s, e) => {
+        list_FileCheck.SelectedIndexChanged += (s, e) =>
+        {
             if (list_FileCheck.SelectedIndex != -1 && list_FileCheck.SelectedIndex != currentIndex)
             {
                 currentIndex = list_FileCheck.SelectedIndex;
@@ -129,7 +142,7 @@ public partial class Form1 : Form
         btn_Del.Click += btn_Del_Click;
     }
 
-    
+
 
     // 카탈로그 파일 로드가 성공한 직후 호출하여 왼쪽 리스트박스를 가득 채우는 함수
     private void UpdateFileList()
@@ -176,7 +189,7 @@ public partial class Form1 : Form
         UpdateFileList();
     }
 
-    
+
     private void btn_Del_Click(object sender, EventArgs e)
     {
         if (dataList == null || dataList.Count == 0) return;
@@ -269,7 +282,7 @@ public partial class Form1 : Form
                 "데이터 개수 : " + dataList.Count
             );
 
-            
+
             UpdateFileList();
         }
     }
@@ -320,16 +333,28 @@ public partial class Form1 : Form
             .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
             .Replace("\\", "/");
 
+        // 학습 프로세스 객체 초기화
+        Process trainProcess = null;
+
         // 새로운 프로세스 시작 정보 객체 생성
         ProcessStartInfo psi = new ProcessStartInfo();
 
         // 실행할 명령어 설정 (wsl을 통해 Python 명령어 실행)
         psi.FileName = @"C:\Windows\System32\wsl.exe";
 
-        // 실행할 명령어 설정
-        psi.Arguments =
-            $"-d Ubuntu-22.04 -- bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate e2e_env && python train.py --tub '{linuxTubPath}' --model donkeycarrot.model --type linear\"";
+        // Conda 환경 이름을 텍스트박스에서 읽어오기
+        string condaEnv = txtCondaEnv.Text;
 
+        // Conda 환경 이름이 비어 있으면 경고 메시지 출력 후 종료
+        if (string.IsNullOrWhiteSpace(condaEnv) || condaEnv == "conda 환경 이름 입력")
+        {
+            MessageBox.Show("Conda 환경 이름을 입력하세요.");
+            return;
+        }
+
+        // 실행할 명령어 설정 (WSL 내에서 Python 스크립트 실행)
+        psi.Arguments =
+            $"-d Ubuntu-22.04 -- bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate {condaEnv} && python train.py --tub '{linuxTubPath}' --model ./models/donkeycarrot.h5 --type linear\"";
         // 작업 디렉토리 설정 (WSL 내에서의 경로)
         psi.EnvironmentVariables["PATH"] =
             @"C:\Windows\System32";
@@ -342,11 +367,11 @@ public partial class Form1 : Form
         psi.UseShellExecute = false;
         psi.CreateNoWindow = true;
 
-        Process processs = new Process();
-        processs.StartInfo = psi;
+        trainProcess = new Process();
+        trainProcess.StartInfo = psi;
 
         // 출력 로그 받기
-        processs.OutputDataReceived += (s, ev) =>
+        trainProcess.OutputDataReceived += (s, ev) =>
         {
             if (!string.IsNullOrEmpty(ev.Data))
             {
@@ -361,6 +386,7 @@ public partial class Form1 : Form
                 log = log.Replace("Complete", "완료");
                 log = log.Replace("Model", "모델");
 
+
                 if (!IsDisposed && txtLog.IsHandleCreated)
                 {
                     Invoke(new Action(() =>
@@ -372,7 +398,7 @@ public partial class Form1 : Form
         };
 
         // 에러 로그 받기
-        processs.ErrorDataReceived += (s, ev) =>
+        trainProcess.ErrorDataReceived += (s, ev) =>
         {
             if (!string.IsNullOrEmpty(ev.Data))
             {
@@ -383,18 +409,58 @@ public partial class Form1 : Form
                 log = log.Replace("failed", "실패");
                 log = log.Replace("No module named", "모듈을 찾을 수 없습니다");
 
-                // 에러 로그를 TextBox에 추가
                 Invoke(new Action(() =>
                 {
-                    txtLog.AppendText("오류: " + log + Environment.NewLine);
+                    // 실제 오류만 "오류:" 붙이기
+                    if (log.Contains("오류") ||
+                        log.Contains("실패") ||
+                        log.Contains("Traceback") ||
+                        log.Contains("Exception"))
+                    {
+                        txtLog.AppendText("[오류] " + log + Environment.NewLine);
+                    }
+                    else
+                    {
+                        txtLog.AppendText("[로그] " + log + Environment.NewLine);
+                    }
                 }));
             }
         };
 
-        processs.Start();
+        // 프로세스 종료 이벤트 핸들러 등록
+        trainProcess.EnableRaisingEvents = true;
 
-        processs.BeginOutputReadLine();
-        processs.BeginErrorReadLine();
+        // 학습 프로세스가 종료될 때 호출되는 이벤트 핸들러
+        trainProcess.Exited += (s, ev) =>
+        {
+            int exitCode = trainProcess.ExitCode;
+
+            if (!IsDisposed && txtLog.IsHandleCreated)
+            {
+                Invoke(new Action(() =>
+                {
+                    txtLog.AppendText(Environment.NewLine);
+
+                    if (exitCode == 0)
+                    {
+                        txtLog.AppendText("학습이 완료되었습니다." + Environment.NewLine);
+                        MessageBox.Show("학습이 완료되었습니다.");
+                    }
+                    else
+                    {
+                        txtLog.AppendText($"학습이 비정상 종료되었습니다. 종료 코드: {exitCode}" + Environment.NewLine);
+                        MessageBox.Show("학습이 비정상 종료되었습니다.");
+                    }
+                }));
+            }
+
+            trainProcess.Dispose();
+        };
+
+        trainProcess.Start();
+
+        trainProcess.BeginOutputReadLine();
+        trainProcess.BeginErrorReadLine();
     }
 
     private void label5_Click(object sender, EventArgs e)
@@ -412,6 +478,24 @@ public partial class Form1 : Form
     {
         // 실수로 더블클릭해서 생긴 디자이너 에러를 무해하게 넘어가도록 빈 껍데기 선언
         btnLoadCatalog_Click(sender, e);
+    }
+
+    private void txtCondaEnv_Enter(object sender, EventArgs e)
+    {
+        if (txtCondaEnv.Text == "conda 환경 이름 입력")
+        {
+            txtCondaEnv.Text = "";
+            txtCondaEnv.ForeColor = Color.Black;
+        }
+    }
+
+    private void txtCondaEnv_Leave(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(txtCondaEnv.Text))
+        {
+            txtCondaEnv.Text = "conda 환경 이름 입력";
+            txtCondaEnv.ForeColor = Color.Silver;
+        }
     }
 }
 
