@@ -25,6 +25,11 @@ public partial class Form1 : Form
 
     private int currentIndex = 0;
 
+    // 자동 재생 타이머
+    System.Windows.Forms.Timer autoTimer = new System.Windows.Forms.Timer();
+
+    int autoDirection = 1;
+
     public Form1()
     {
         InitializeComponent();
@@ -42,6 +47,10 @@ public partial class Form1 : Form
         txtCondaEnv.Leave += txtCondaEnv_Leave;
 
         InitializeManagerEvents();
+
+        autoTimer.Interval = 500; // 0.5초 간격으로 자동 재생
+
+        autoTimer.Tick += AutoTimer_Tick; // 타이머 틱 이벤트 핸들러 연결
     }
 
 
@@ -103,20 +112,6 @@ public partial class Form1 : Form
         btn_BigL.Click += (s, e) =>
         {
             if (currentIndex > 0) { currentIndex--; DisplayCurrentData(); }
-        };
-
-        // >> 버튼 : 다음 10번째 프레임으로 고속 점프
-        btn_SmallR.Click += (s, e) =>
-        {
-            currentIndex = Math.Min(currentIndex + 10, dataList.Count - 1);
-            DisplayCurrentData();
-        };
-
-        // << 버튼 : 이전 10번째 프레임으로 고속 점프
-        btn_SmallL.Click += (s, e) =>
-        {
-            currentIndex = Math.Max(currentIndex - 10, 0);
-            DisplayCurrentData();
         };
 
         // tbar_Dk : 트랙바 슬라이더 드래그 시 인덱스 변경 연동
@@ -496,6 +491,39 @@ public partial class Form1 : Form
             txtCondaEnv.Text = "conda 환경 이름 입력";
             txtCondaEnv.ForeColor = Color.Silver;
         }
+    }
+
+    private void btn_SmallR_Click(object sender, EventArgs e)
+    {
+        autoDirection = 1;
+        autoTimer.Start();
+    }
+
+    // 자동 재생 타이머 이벤트 핸들러
+    private void AutoTimer_Tick(object sender, EventArgs e)
+    {
+        if (dataList == null || dataList.Count == 0) return;
+
+        currentIndex += autoDirection;
+
+        if (currentIndex >= dataList.Count)
+            currentIndex = 0;
+
+        if (currentIndex < 0)
+            currentIndex = dataList.Count - 1;
+
+        DisplayCurrentData();
+    }
+
+    private void btn_Stop_Click(object sender, EventArgs e)
+    {
+        autoTimer.Stop();
+    }
+
+    private void btn_SmallL_Click(object sender, EventArgs e)
+    {
+        autoDirection = -1;
+        autoTimer.Start();
     }
 }
 

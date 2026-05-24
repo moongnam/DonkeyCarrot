@@ -224,6 +224,7 @@ partial class Form1
         btn_SmallR.TabIndex = 8;
         btn_SmallR.Text = ">>";
         btn_SmallR.UseVisualStyleBackColor = true;
+        btn_SmallR.Click += btn_SmallR_Click;
         // 
         // btn_Stop
         // 
@@ -234,6 +235,7 @@ partial class Form1
         btn_Stop.TabIndex = 7;
         btn_Stop.Text = "stop";
         btn_Stop.UseVisualStyleBackColor = true;
+        btn_Stop.Click += btn_Stop_Click;
         // 
         // btn_SmallL
         // 
@@ -244,6 +246,7 @@ partial class Form1
         btn_SmallL.TabIndex = 6;
         btn_SmallL.Text = "<<";
         btn_SmallL.UseVisualStyleBackColor = true;
+        btn_SmallL.Click += btn_SmallL_Click;
         // 
         // btn_BigL
         // 
@@ -254,7 +257,6 @@ partial class Form1
         btn_BigL.TabIndex = 5;
         btn_BigL.Text = "<";
         btn_BigL.UseVisualStyleBackColor = true;
-        btn_BigL.Click += btn_BigL_Click;
         // 
         // btn_BigR
         // 
