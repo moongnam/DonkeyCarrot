@@ -422,7 +422,7 @@ public partial class Form1 : Form
         }
 
         // 제목
-        g.DrawString("user/" + graphType.ToLower(), font, Brushes.Red, graphRight - 90, graphTop + 5);
+        g.DrawString("user/" + graphType.ToLower(), font, Brushes.Red, graphRight - 90, graphTop - 20);
 
         pic_Graph.Image = bmp;
     }
