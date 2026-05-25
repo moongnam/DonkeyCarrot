@@ -35,7 +35,7 @@ public partial class Form1 : Form
         InitializeComponent();
 
         // 기존 버튼 클릭 이벤트 연결
-       
+
         btnLoadImages.Click += btnLoadImages_Click;
 
         //그래프 이벤트 연결
@@ -58,6 +58,20 @@ public partial class Form1 : Form
         autoTimer.Interval = 500; // 0.5초 간격으로 자동 재생
 
         autoTimer.Tick += AutoTimer_Tick; // 타이머 틱 이벤트 핸들러 연결
+
+        // 재생 속도 콤보박스 초기화
+        cmbSpeed.Items.Add("0.25");
+        cmbSpeed.Items.Add("0.5");
+        cmbSpeed.Items.Add("0.75");
+        cmbSpeed.Items.Add("1.0");
+        cmbSpeed.Items.Add("1.25");
+        cmbSpeed.Items.Add("1.5");
+        cmbSpeed.Items.Add("1.75");
+        cmbSpeed.Items.Add("2.0");
+
+        cmbSpeed.SelectedItem = "1.0";// 기본값 1.0x 설정
+
+        cmbSpeed.SelectedIndexChanged += cmbSpeed_SelectedIndexChanged; // 콤보박스 선택 변경 이벤트 핸들러 연결
     }
 
 
@@ -669,6 +683,15 @@ public partial class Form1 : Form
     {
         autoDirection = -1;
         autoTimer.Start();
+    }
+
+    private void cmbSpeed_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        double speed =
+        Convert.ToDouble(cmbSpeed.SelectedItem);
+
+        autoTimer.Interval =
+            (int)(1000 / speed);
     }
 }
 
