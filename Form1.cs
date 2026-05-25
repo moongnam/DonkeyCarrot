@@ -35,8 +35,15 @@ public partial class Form1 : Form
         InitializeComponent();
 
         // 기존 버튼 클릭 이벤트 연결
-        btnLoadCatalog.Click += btnLoadCatalog_Click;
+       
         btnLoadImages.Click += btnLoadImages_Click;
+
+        //그래프 이벤트 연결
+        btnAngleGraph.Click += btnAngleGraph_Click;
+        btnThrottleGraph.Click += btnThrottleGraph_Click;
+
+        // pic_Graph 외곽선
+        pic_Graph.BorderStyle = BorderStyle.FixedSingle;
 
         // Conda 환경 이름 입력 텍스트박스 초기 설정
         txtCondaEnv.Text = "conda 환경 이름 입력";
@@ -279,7 +286,145 @@ public partial class Form1 : Form
 
 
             UpdateFileList();
+            DrawGraph("Angle");
         }
+    }
+
+    //그래프 angle 이나 throttle 선택 버튼
+    private void btnAngleGraph_Click(object sender, EventArgs e)
+    {
+        DrawGraph("Angle");
+    }
+
+    private void btnThrottleGraph_Click(object sender, EventArgs e)
+    {
+        DrawGraph("Throttle");
+    }
+
+    // 그래프 그리는 함수
+    private void DrawGraph(string graphType)
+    {
+        if (dataList.Count == 0)
+            return;
+
+        int width = pic_Graph.Width;
+        int height = pic_Graph.Height;
+
+        Bitmap bmp = new Bitmap(width, height);
+        Graphics g = Graphics.FromImage(bmp);
+
+        g.Clear(Color.White);
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+        // 여백
+        int left = 60;
+        int right = 45;
+        int top = 25;
+        int bottom = 45;
+
+        int graphLeft = left;
+        int graphRight = width - right;
+        int graphTop = top;
+        int graphBottom = height - bottom;
+
+        int graphWidth = graphRight - graphLeft;
+        int graphHeight = graphBottom - graphTop;
+
+        Pen gridPen = new Pen(Color.LightGray, 1);
+        Pen axisPen = new Pen(Color.Black, 1);
+        Pen linePen = new Pen(Color.Red, 2);
+
+        Font font = new Font("Arial", 8);
+        Brush textBrush = Brushes.Black;
+
+        float minValue = 0;
+        float maxValue = 0;
+
+        foreach (var data in dataList)
+        {
+            float v = graphType == "Angle" ? data.Angle : data.Throttle;
+
+            if (v < minValue) minValue = v;
+            if (v > maxValue) maxValue = v;
+        }
+
+        if (maxValue == minValue)
+        {
+            maxValue += 1;
+            minValue -= 1;
+        }
+
+        float padding = (maxValue - minValue) * 0.1f;
+        maxValue += padding;
+        minValue -= padding;
+
+        // 테두리
+        g.DrawRectangle(axisPen, graphLeft, graphTop, graphWidth, graphHeight);
+
+        // Y축 눈금
+        int yTickCount = 5;
+
+        for (int i = 0; i <= yTickCount; i++)
+        {
+            int y = graphBottom - (i * graphHeight / yTickCount);
+            float value = minValue + (i * (maxValue - minValue) / yTickCount);
+
+            g.DrawLine(gridPen, graphLeft, y, graphRight, y);
+            g.DrawString(value.ToString("0.00"), font, textBrush, 5, y - 7);
+        }
+
+        // X축 눈금 간격 자동 계산
+        int xStep;
+
+        if (dataList.Count <= 100)
+            xStep = 10;
+        else if (dataList.Count <= 300)
+            xStep = 20;
+        else if (dataList.Count <= 800)
+            xStep = 50;
+        else if (dataList.Count <= 1500)
+            xStep = 100;
+        else if (dataList.Count <= 3000)
+            xStep = 200;
+        else
+            xStep = 500;
+
+        int lastTextX = -9999;
+
+        // X축 눈금
+        for (int i = 0; i < dataList.Count; i += xStep)
+        {
+            int x = graphLeft + (i * graphWidth / (dataList.Count - 1));
+
+            g.DrawLine(gridPen, x, graphTop, x, graphBottom);
+
+            // 글자가 너무 가까우면 안 쓰기
+            if (x - lastTextX > 35)
+            {
+                g.DrawString(i.ToString(), font, textBrush, x - 10, graphBottom + 5);
+                lastTextX = x;
+            }
+        }
+
+        // 그래프 선 그리기
+        for (int i = 0; i < dataList.Count - 1; i++)
+        {
+            float value1 = graphType == "Angle" ? dataList[i].Angle : dataList[i].Throttle;
+            float value2 = graphType == "Angle" ? dataList[i + 1].Angle : dataList[i + 1].Throttle;
+
+            int x1 = graphLeft + (i * graphWidth / (dataList.Count - 1));
+            int x2 = graphLeft + ((i + 1) * graphWidth / (dataList.Count - 1));
+
+            int y1 = graphBottom - (int)((value1 - minValue) / (maxValue - minValue) * graphHeight);
+            int y2 = graphBottom - (int)((value2 - minValue) / (maxValue - minValue) * graphHeight);
+
+            g.DrawLine(linePen, x1, y1, x2, y2);
+        }
+
+        // 제목
+        g.DrawString("user/" + graphType.ToLower(), font, Brushes.Red, graphRight - 90, graphTop + 5);
+
+        pic_Graph.Image = bmp;
     }
 
     // 이미지 폴더 불러오기 버튼
