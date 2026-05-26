@@ -502,9 +502,18 @@ public partial class Form1 : Form
         // Conda 환경 이름이 비어 있으면 경고 메시지 출력 후 종료
         if (string.IsNullOrWhiteSpace(condaEnv) || condaEnv == "conda 환경 이름 입력")
         {
+            lblStatus.Text = "상태: 대기 중";
+            lblStatus.ForeColor = Color.White;
+
             MessageBox.Show("Conda 환경 이름을 입력하세요.");
             return;
         }
+
+        // -----------------------------------------------------------
+        // [위치 1] 검증 통과 후 프로세스 시작 직전에 "학습 진행 중"으로 변경
+        // -----------------------------------------------------------
+        lblStatus.Text = "상태: 학습 진행 중...";
+        lblStatus.ForeColor = Color.Lime; // 터미널 창과 어울리는 녹색
 
         // 실행할 명령어 설정 (WSL 내에서 Python 스크립트 실행)
         psi.Arguments =
@@ -572,6 +581,11 @@ public partial class Form1 : Form
                         log.Contains("Exception"))
                     {
                         txtLog.AppendText("[오류] " + log + Environment.NewLine);
+                        // -----------------------------------------------------------
+                        // [위치 2] 심각한 에러가 로그에 찍히면 상태를 에러로 변경 (선택 사항)
+                        // -----------------------------------------------------------
+                        lblStatus.Text = "상태: 오류 발생!";
+                        lblStatus.ForeColor = Color.Red;
                     }
                     else
                     {
@@ -598,11 +612,22 @@ public partial class Form1 : Form
                     if (exitCode == 0)
                     {
                         txtLog.AppendText("학습이 완료되었습니다." + Environment.NewLine);
+                        // -----------------------------------------------------------
+                        // [위치 3] 정상 종료 시 "학습 완료"로 변경
+                        // -----------------------------------------------------------
+                        lblStatus.Text = "상태: 학습 완료";
+                        lblStatus.ForeColor = Color.DodgerBlue;
                         MessageBox.Show("학습이 완료되었습니다.");
+                        
                     }
                     else
                     {
                         txtLog.AppendText($"학습이 비정상 종료되었습니다. 종료 코드: {exitCode}" + Environment.NewLine);
+                        // -----------------------------------------------------------
+                        // [위치 4] 비정상 종료 시 "중단됨"으로 변경
+                        // -----------------------------------------------------------
+                        lblStatus.Text = "상태: 비정상 종료";
+                        lblStatus.ForeColor = Color.OrangeRed;
                         MessageBox.Show("학습이 비정상 종료되었습니다.");
                     }
                 }));
@@ -692,6 +717,11 @@ public partial class Form1 : Form
 
         autoTimer.Interval =
             (int)(1000 / speed);
+    }
+
+    private void txtLog_TextChanged(object sender, EventArgs e)
+    {
+
     }
 }
 
