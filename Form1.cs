@@ -11,8 +11,11 @@ namespace DonkeyCarrot;
 
 public partial class Form1 : Form
 {
-    // catalog 데이터를 저장할 리스트
+    // catalog 데이터를 저장할 리스트 (전체 원본 데이터)
     List<DonkeyData> dataList = new List<DonkeyData>();
+
+    // 🔍 솎아내기(필터링)된 데이터를 추적하기 위한 현재 화면용 리스트
+    List<DonkeyData> filteredList = new List<DonkeyData>();
 
     // 이미지 파일 경로를 저장할 리스트
     List<string> imageList = new List<string>();
@@ -35,10 +38,9 @@ public partial class Form1 : Form
         InitializeComponent();
 
         // 기존 버튼 클릭 이벤트 연결
-
         btnLoadImages.Click += btnLoadImages_Click;
 
-        //그래프 이벤트 연결
+        // 그래프 이벤트 연결
         btnAngleGraph.Click += btnAngleGraph_Click;
         btnThrottleGraph.Click += btnThrottleGraph_Click;
 
@@ -69,7 +71,7 @@ public partial class Form1 : Form
         cmbSpeed.Items.Add("1.75");
         cmbSpeed.Items.Add("2.0");
 
-        cmbSpeed.SelectedItem = "1.0";// 기본값 1.0x 설정
+        cmbSpeed.SelectedItem = "1.0"; // 기본값 1.0x 설정
 
         cmbSpeed.SelectedIndexChanged += cmbSpeed_SelectedIndexChanged; // 콤보박스 선택 변경 이벤트 핸들러 연결
     }
@@ -77,42 +79,43 @@ public partial class Form1 : Form
 
     private void DisplayCurrentData()
     {
-        // 데이터 리스트가 비어 있으면 화면 갱신을 하지 않음
-        if (dataList == null || dataList.Count == 0) return;
+        // 🔍 현재 활성화된 리스트(필터링 상태 반영) 기준으로 데이터 체크
+        var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+
+        if (currentSource == null || currentSource.Count == 0) return;
 
         // 인덱스가 데이터 범위를 벗어나지 않도록 안전장치 설정
         if (currentIndex < 0) currentIndex = 0;
-        if (currentIndex >= dataList.Count) currentIndex = dataList.Count - 1;
+        if (currentIndex >= currentSource.Count) currentIndex = currentSource.Count - 1;
 
         // 1. 현재 주행 데이터 가져오기
-        DonkeyData currentData = dataList[currentIndex];
+        DonkeyData currentData = currentSource[currentIndex];
 
-        // 2. 우측 상단 라벨(lbl_FrameV, lbl_AngleV, lbl_ThrottleV)에 값 반영
+        // 2. 우측 상단 라벨에 값 반영
         lbl_FrameV.Text = currentIndex.ToString();
-        lbl_AngleV.Text = currentData.Angle.ToString("F4");       // 소수점 4자리 포맷팅
+        lbl_AngleV.Text = currentData.Angle.ToString("F4"); // 소수점 4자리 포맷팅
         lbl_ThrottleV.Text = currentData.Throttle.ToString("F4");
 
-        // 3. 하단 트랙바(tbar_Dk) 슬라이더 위치 동기화
-        tbar_Dk.Maximum = dataList.Count - 1;
+        // 3. 하단 트랙바 슬라이더 위치 동기화
+        tbar_Dk.Maximum = currentSource.Count - 1;
         tbar_Dk.Value = currentIndex;
 
-        // 4. 왼쪽 아래 파일 리스트(list_FileCheck)의 선택 하이라이트 동기화
+        // 4. 왼쪽 아래 파일 리스트의 선택 하이라이트 동기화
         if (list_FileCheck.Items.Count > currentIndex)
         {
             list_FileCheck.SelectedIndex = currentIndex;
         }
 
-        // 5. 중앙 PictureBox(pic_DkScreen)에 주행 이미지 바인딩
+        // 5. 중앙 PictureBox에 주행 이미지 바인딩
         string imageName = Path.GetFileName(currentData.ImagePath);
         string actualImagePath = imageList.Find(path => path.Contains(imageName));
 
         if (!string.IsNullOrEmpty(actualImagePath) && File.Exists(actualImagePath))
         {
-            // 메모리 누수 방지를 위해 기존 이미지 리소스 자원 해제
             if (pic_DkScreen.Image != null) pic_DkScreen.Image.Dispose();
 
             pic_DkScreen.Image = System.Drawing.Image.FromFile(actualImagePath);
-            pic_DkScreen.SizeMode = PictureBoxSizeMode.Zoom; // 이미지 비율 유지 모드
+            pic_DkScreen.SizeMode = PictureBoxSizeMode.Zoom;
         }
         else
         {
@@ -126,7 +129,8 @@ public partial class Form1 : Form
         // > 버튼 : 다음 프레임 데이터로 1건 이동
         btn_BigR.Click += (s, e) =>
         {
-            if (currentIndex < dataList.Count - 1) { currentIndex++; DisplayCurrentData(); }
+            var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+            if (currentIndex < currentSource.Count - 1) { currentIndex++; DisplayCurrentData(); }
         };
 
         // < 버튼 : 이전 프레임 데이터로 1건 이동
@@ -159,11 +163,12 @@ public partial class Form1 : Form
     }
 
 
-
     // 카탈로그 파일 로드가 성공한 직후 호출하여 왼쪽 리스트박스를 가득 채우는 함수
     private void UpdateFileList()
     {
         list_FileCheck.Items.Clear();
+        filteredList.Clear(); // 🔍 원본 파일 리스트를 볼 때는 필터링 리스트 비우기
+
         foreach (var data in dataList)
         {
             list_FileCheck.Items.Add(Path.GetFileName(data.ImagePath));
@@ -176,26 +181,32 @@ public partial class Form1 : Form
         }
     }
 
-    // 찾기 버튼 : 누르면 자동으로 '직진 주행 데이터(Angle이 0에 가까운 프레임)'만 필터링
+    // 🔍 찾기 버튼 : 누르면 자동으로 불필요하거나 특정 조건의 데이터를 '솎아내기' 필터링 수행
     private void btn_Find_Click(object sender, EventArgs e)
     {
         if (dataList == null || dataList.Count == 0) return;
 
-        // 조향각(Angle) 오차가 -0.01 ~ +0.01 사이인 클린 직진 데이터만 LINQ로 추출
-        var filtered = dataList.Where(d => Math.Abs(d.Angle) < 0.01).ToList();
+        // 💡 [솎아내기 기준 설정] 
+        // 여기서는 예시로 '완전 직진 주행(Angle 오차가 -0.01 ~ +0.01 사이)' 데이터만 남기고 솎아냅니다.
+        // 만약 '속도가 0인 쓰레기 데이터만 골라내고 싶다'면 d.Throttle == 0 등으로 조건을 바꾸시면 됩니다!
+        filteredList = dataList.Where(d => Math.Abs(d.Angle) < 0.01).ToList();
 
-        if (filtered.Count > 0)
+        if (filteredList.Count > 0)
         {
             list_FileCheck.Items.Clear();
-            foreach (var d in filtered)
+            foreach (var d in filteredList)
             {
-                list_FileCheck.Items.Add($"[직진구간] {Path.GetFileName(d.ImagePath)} (Angle:{d.Angle:F3})");
+                list_FileCheck.Items.Add($"[솎아냄] {Path.GetFileName(d.ImagePath)} (Angle:{d.Angle:F3})");
             }
-            MessageBox.Show($"전체 데이터 중 완전 직진 구간 데이터 {filtered.Count}건을 필터링했습니다.");
+
+            currentIndex = 0;
+            DisplayCurrentData();
+            MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 솎아냈습니다.\n[삭제] 버튼을 누르면 학습 제외가 가능합니다.");
         }
         else
         {
-            MessageBox.Show("직진 주행 조건과 일치하는 데이터가 존재하지 않습니다.");
+            filteredList.Clear();
+            MessageBox.Show("솎아내기 조건과 일치하는 데이터가 존재하지 않습니다.");
         }
     }
 
@@ -206,9 +217,12 @@ public partial class Form1 : Form
     }
 
 
+    // 삭제 버튼 : 현재 선택된 프레임을 데이터 리스트에서 제외 (솎아낸 상태에서도 연동됨)
     private void btn_Del_Click(object sender, EventArgs e)
     {
-        if (dataList == null || dataList.Count == 0) return;
+        var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+
+        if (currentSource == null || currentSource.Count == 0 || currentIndex < 0 || currentIndex >= currentSource.Count) return;
 
         DialogResult result = MessageBox.Show(
             $"현재 선택된 {currentIndex + 1}번째 주행 프레임을 모델 학습 대상에서 제외하시겠습니까?",
@@ -219,15 +233,27 @@ public partial class Form1 : Form
 
         if (result == DialogResult.Yes)
         {
-            // 메모리 리스트와 UI 리스트박스에서 동시 삭제
-            dataList.RemoveAt(currentIndex);
+            // 현재 타겟 데이터 백업
+            DonkeyData targetData = currentSource[currentIndex];
+
+            // 🔍 솎아내기 리스트를 보고 있던 중이라면 양쪽 모두에서 동시 삭제 진행
+            if (filteredList.Count > 0)
+            {
+                filteredList.RemoveAt(currentIndex);
+            }
+            dataList.Remove(targetData); // 원본 리스트에서도 완전 삭제
+
+            // UI 리스트박스 항목 삭제
             list_FileCheck.Items.RemoveAt(currentIndex);
 
             MessageBox.Show("해당 프레임 데이터가 성공적으로 제외되었습니다.");
 
             // 데이터 삭제 후 인덱스 범위 재조정 및 새로고침
-            if (currentIndex >= dataList.Count) currentIndex = dataList.Count - 1;
+            var checkSource = filteredList.Count > 0 ? filteredList : dataList;
+            if (currentIndex >= checkSource.Count) currentIndex = checkSource.Count - 1;
+
             DisplayCurrentData();
+            DrawGraph("Angle"); // 데이터 변동이 생겼으므로 그래프도 최신화
         }
     }
 
@@ -237,35 +263,27 @@ public partial class Form1 : Form
         FolderBrowserDialog fbd = new FolderBrowserDialog();
 
         fbd.Description = "data 폴더 선택";
-        fbd.InitialDirectory =
-            Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        fbd.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
         if (fbd.ShowDialog() == DialogResult.OK)
         {
             dataList.Clear();
+            filteredList.Clear(); // 초기화
 
             string dataFolderPath = fbd.SelectedPath;
-
-            // tub 경로 저장
             tubPath = dataFolderPath;
 
-            // 현재 폴더부터 manage.py 찾기
-            DirectoryInfo currentDir =
-                new DirectoryInfo(dataFolderPath);
+            DirectoryInfo currentDir = new DirectoryInfo(dataFolderPath);
 
             while (currentDir != null)
             {
-                string managePath =
-                    Path.Combine(currentDir.FullName, "manage.py");
+                string managePath = Path.Combine(currentDir.FullName, "manage.py");
 
-                // manage.py 발견
                 if (File.Exists(managePath))
                 {
                     projectPath = currentDir.FullName;
                     break;
                 }
-
-                // 상위 폴더 이동
                 currentDir = currentDir.Parent;
             }
 
@@ -282,8 +300,7 @@ public partial class Form1 : Form
                     if (string.IsNullOrWhiteSpace(line))
                         continue;
 
-                    DonkeyData data =
-                        JsonConvert.DeserializeObject<DonkeyData>(line);
+                    DonkeyData data = JsonConvert.DeserializeObject<DonkeyData>(line);
 
                     if (data != null)
                     {
@@ -298,13 +315,12 @@ public partial class Form1 : Form
                 "데이터 개수 : " + dataList.Count
             );
 
-
             UpdateFileList();
             DrawGraph("Angle");
         }
     }
 
-    //그래프 angle 이나 throttle 선택 버튼
+    // 그래프 angle 이나 throttle 선택 버튼
     private void btnAngleGraph_Click(object sender, EventArgs e)
     {
         DrawGraph("Angle");
@@ -318,7 +334,9 @@ public partial class Form1 : Form
     // 그래프 그리는 함수
     private void DrawGraph(string graphType)
     {
-        if (dataList.Count == 0)
+        var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+
+        if (currentSource.Count == 0)
             return;
 
         int width = pic_Graph.Width;
@@ -330,7 +348,6 @@ public partial class Form1 : Form
         g.Clear(Color.White);
         g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-        // 여백
         int left = 60;
         int right = 45;
         int top = 25;
@@ -354,7 +371,7 @@ public partial class Form1 : Form
         float minValue = 0;
         float maxValue = 0;
 
-        foreach (var data in dataList)
+        foreach (var data in currentSource)
         {
             float v = graphType == "Angle" ? data.Angle : data.Throttle;
 
@@ -372,10 +389,8 @@ public partial class Form1 : Form
         maxValue += padding;
         minValue -= padding;
 
-        // 테두리
         g.DrawRectangle(axisPen, graphLeft, graphTop, graphWidth, graphHeight);
 
-        // Y축 눈금
         int yTickCount = 5;
 
         for (int i = 0; i <= yTickCount; i++)
@@ -387,32 +402,23 @@ public partial class Form1 : Form
             g.DrawString(value.ToString("0.00"), font, textBrush, 5, y - 7);
         }
 
-        // X축 눈금 간격 자동 계산
         int xStep;
 
-        if (dataList.Count <= 100)
-            xStep = 10;
-        else if (dataList.Count <= 300)
-            xStep = 20;
-        else if (dataList.Count <= 800)
-            xStep = 50;
-        else if (dataList.Count <= 1500)
-            xStep = 100;
-        else if (dataList.Count <= 3000)
-            xStep = 200;
-        else
-            xStep = 500;
+        if (currentSource.Count <= 100) xStep = 10;
+        else if (currentSource.Count <= 300) xStep = 20;
+        else if (currentSource.Count <= 800) xStep = 50;
+        else if (currentSource.Count <= 1500) xStep = 100;
+        else if (currentSource.Count <= 3000) xStep = 200;
+        else xStep = 500;
 
         int lastTextX = -9999;
 
-        // X축 눈금
-        for (int i = 0; i < dataList.Count; i += xStep)
+        for (int i = 0; i < currentSource.Count; i += xStep)
         {
-            int x = graphLeft + (i * graphWidth / (dataList.Count - 1));
+            int x = graphLeft + (i * graphWidth / (currentSource.Count - 1));
 
             g.DrawLine(gridPen, x, graphTop, x, graphBottom);
 
-            // 글자가 너무 가까우면 안 쓰기
             if (x - lastTextX > 35)
             {
                 g.DrawString(i.ToString(), font, textBrush, x - 10, graphBottom + 5);
@@ -420,14 +426,13 @@ public partial class Form1 : Form
             }
         }
 
-        // 그래프 선 그리기
-        for (int i = 0; i < dataList.Count - 1; i++)
+        for (int i = 0; i < currentSource.Count - 1; i++)
         {
-            float value1 = graphType == "Angle" ? dataList[i].Angle : dataList[i].Throttle;
-            float value2 = graphType == "Angle" ? dataList[i + 1].Angle : dataList[i + 1].Throttle;
+            float value1 = graphType == "Angle" ? currentSource[i].Angle : currentSource[i].Throttle;
+            float value2 = graphType == "Angle" ? currentSource[i + 1].Angle : currentSource[i + 1].Throttle;
 
-            int x1 = graphLeft + (i * graphWidth / (dataList.Count - 1));
-            int x2 = graphLeft + ((i + 1) * graphWidth / (dataList.Count - 1));
+            int x1 = graphLeft + (i * graphWidth / (currentSource.Count - 1));
+            int x2 = graphLeft + ((i + 1) * graphWidth / (currentSource.Count - 1));
 
             int y1 = graphBottom - (int)((value1 - minValue) / (maxValue - minValue) * graphHeight);
             int y2 = graphBottom - (int)((value2 - minValue) / (maxValue - minValue) * graphHeight);
@@ -435,7 +440,6 @@ public partial class Form1 : Form
             g.DrawLine(linePen, x1, y1, x2, y2);
         }
 
-        // 제목
         g.DrawString("user/" + graphType.ToLower(), font, Brushes.Red, graphRight - 90, graphTop - 20);
 
         pic_Graph.Image = bmp;
@@ -447,18 +451,14 @@ public partial class Form1 : Form
         FolderBrowserDialog fbd = new FolderBrowserDialog();
 
         fbd.Description = "images 폴더 선택";
-        fbd.InitialDirectory =
-            Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        fbd.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
         if (fbd.ShowDialog() == DialogResult.OK)
         {
             imageList.Clear();
 
-            string[] jpgFiles =
-                Directory.GetFiles(fbd.SelectedPath, "*.jpg");
-
-            string[] pngFiles =
-                Directory.GetFiles(fbd.SelectedPath, "*.png");
+            string[] jpgFiles = Directory.GetFiles(fbd.SelectedPath, "*.jpg");
+            string[] pngFiles = Directory.GetFiles(fbd.SelectedPath, "*.png");
 
             imageList.AddRange(jpgFiles);
             imageList.AddRange(pngFiles);
@@ -468,17 +468,14 @@ public partial class Form1 : Form
                 "이미지 개수 : " + imageList.Count
             );
 
-            // 이미지 폴더까지 마저 로드되면 화면 싱크를 다시 한번 리프레시해 줌
             DisplayCurrentData();
         }
     }
 
     private void btnTrain_Click_1(object sender, EventArgs e)
     {
-        //로그 초기화
         txtLog.Clear();
 
-        // WSL 경로 변환
         string linuxProjectPath = projectPath
             .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
             .Replace("\\", "/");
@@ -487,19 +484,13 @@ public partial class Form1 : Form
             .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
             .Replace("\\", "/");
 
-        // 학습 프로세스 객체 초기화
         Process trainProcess = null;
-
-        // 새로운 프로세스 시작 정보 객체 생성
         ProcessStartInfo psi = new ProcessStartInfo();
 
-        // 실행할 명령어 설정 (wsl을 통해 Python 명령어 실행)
         psi.FileName = @"C:\Windows\System32\wsl.exe";
 
-        // Conda 환경 이름을 텍스트박스에서 읽어오기
         string condaEnv = txtCondaEnv.Text;
 
-        // Conda 환경 이름이 비어 있으면 경고 메시지 출력 후 종료
         if (string.IsNullOrWhiteSpace(condaEnv) || condaEnv == "conda 환경 이름 입력")
         {
             lblStatus.Text = "상태: 대기 중";
@@ -509,38 +500,26 @@ public partial class Form1 : Form
             return;
         }
 
-        // -----------------------------------------------------------
-        // [위치 1] 검증 통과 후 프로세스 시작 직전에 "학습 진행 중"으로 변경
-        // -----------------------------------------------------------
         lblStatus.Text = "상태: 학습 진행 중...";
-        lblStatus.ForeColor = Color.Lime; // 터미널 창과 어울리는 녹색
+        lblStatus.ForeColor = Color.Lime;
 
-        // 실행할 명령어 설정 (WSL 내에서 Python 스크립트 실행)
-        psi.Arguments =
-            $"-d Ubuntu-22.04 -- bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate {condaEnv} && python train.py --tub '{linuxTubPath}' --model ./models/donkeycarrot.h5 --type linear\"";
-        // 작업 디렉토리 설정 (WSL 내에서의 경로)
-        psi.EnvironmentVariables["PATH"] =
-            @"C:\Windows\System32";
+        psi.Arguments = $"-d Ubuntu-22.04 -- bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate {condaEnv} && python train.py --tub '{linuxTubPath}' --model ./models/donkeycarrot.h5 --type linear\"";
+        psi.EnvironmentVariables["PATH"] = @"C:\Windows\System32";
 
-        // 로그 출력 받기
         psi.RedirectStandardOutput = true;
         psi.RedirectStandardError = true;
-
-        // 필수 설정
         psi.UseShellExecute = false;
         psi.CreateNoWindow = true;
 
         trainProcess = new Process();
         trainProcess.StartInfo = psi;
 
-        // 출력 로그 받기
         trainProcess.OutputDataReceived += (s, ev) =>
         {
             if (!string.IsNullOrEmpty(ev.Data))
             {
                 string log = ev.Data;
 
-                // 영어를 한글로 변환
                 log = log.Replace("Epoch", "학습");
                 log = log.Replace("loss", "손실값");
                 log = log.Replace("Loading", "불러오는 중");
@@ -548,7 +527,6 @@ public partial class Form1 : Form
                 log = log.Replace("Training", "학습");
                 log = log.Replace("Complete", "완료");
                 log = log.Replace("Model", "모델");
-
 
                 if (!IsDisposed && txtLog.IsHandleCreated)
                 {
@@ -560,30 +538,21 @@ public partial class Form1 : Form
             }
         };
 
-        // 에러 로그 받기
         trainProcess.ErrorDataReceived += (s, ev) =>
         {
             if (!string.IsNullOrEmpty(ev.Data))
             {
                 string log = ev.Data;
 
-                // 영어를 한글로 변환
                 log = log.Replace("ERROR", "오류");
                 log = log.Replace("failed", "실패");
                 log = log.Replace("No module named", "모듈을 찾을 수 없습니다");
 
                 Invoke(new Action(() =>
                 {
-                    // 실제 오류만 "오류:" 붙이기
-                    if (log.Contains("오류") ||
-                        log.Contains("실패") ||
-                        log.Contains("Traceback") ||
-                        log.Contains("Exception"))
+                    if (log.Contains("오류") || log.Contains("실패") || log.Contains("Traceback") || log.Contains("Exception"))
                     {
                         txtLog.AppendText("[오류] " + log + Environment.NewLine);
-                        // -----------------------------------------------------------
-                        // [위치 2] 심각한 에러가 로그에 찍히면 상태를 에러로 변경 (선택 사항)
-                        // -----------------------------------------------------------
                         lblStatus.Text = "상태: 오류 발생!";
                         lblStatus.ForeColor = Color.Red;
                     }
@@ -595,10 +564,8 @@ public partial class Form1 : Form
             }
         };
 
-        // 프로세스 종료 이벤트 핸들러 등록
         trainProcess.EnableRaisingEvents = true;
 
-        // 학습 프로세스가 종료될 때 호출되는 이벤트 핸들러
         trainProcess.Exited += (s, ev) =>
         {
             int exitCode = trainProcess.ExitCode;
@@ -612,52 +579,30 @@ public partial class Form1 : Form
                     if (exitCode == 0)
                     {
                         txtLog.AppendText("학습이 완료되었습니다." + Environment.NewLine);
-                        // -----------------------------------------------------------
-                        // [위치 3] 정상 종료 시 "학습 완료"로 변경
-                        // -----------------------------------------------------------
                         lblStatus.Text = "상태: 학습 완료";
                         lblStatus.ForeColor = Color.DodgerBlue;
                         MessageBox.Show("학습이 완료되었습니다.");
-                        
                     }
                     else
                     {
                         txtLog.AppendText($"학습이 비정상 종료되었습니다. 종료 코드: {exitCode}" + Environment.NewLine);
-                        // -----------------------------------------------------------
-                        // [위치 4] 비정상 종료 시 "중단됨"으로 변경
-                        // -----------------------------------------------------------
                         lblStatus.Text = "상태: 비정상 종료";
                         lblStatus.ForeColor = Color.OrangeRed;
                         MessageBox.Show("학습이 비정상 종료되었습니다.");
                     }
                 }));
             }
-
             trainProcess.Dispose();
         };
 
         trainProcess.Start();
-
         trainProcess.BeginOutputReadLine();
         trainProcess.BeginErrorReadLine();
     }
 
-    private void label5_Click(object sender, EventArgs e)
-    {
-
-    }
-
-    private void btn_BigL_Click(object sender, EventArgs e)
-    {
-
-    }
-
-    // 🛡️ [디자이너 충돌 방지용 안전 필드 생성]
-    private void btnLoadCatalog_Click_1(object sender, EventArgs e)
-    {
-        // 실수로 더블클릭해서 생긴 디자이너 에러를 무해하게 넘어가도록 빈 껍데기 선언
-        btnLoadCatalog_Click(sender, e);
-    }
+    private void label5_Click(object sender, EventArgs e) { }
+    private void btn_BigL_Click(object sender, EventArgs e) { }
+    private void btnLoadCatalog_Click_1(object sender, EventArgs e) { btnLoadCatalog_Click(sender, e); }
 
     private void txtCondaEnv_Enter(object sender, EventArgs e)
     {
@@ -683,18 +628,15 @@ public partial class Form1 : Form
         autoTimer.Start();
     }
 
-    // 자동 재생 타이머 이벤트 핸들러
     private void AutoTimer_Tick(object sender, EventArgs e)
     {
-        if (dataList == null || dataList.Count == 0) return;
+        var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+        if (currentSource == null || currentSource.Count == 0) return;
 
         currentIndex += autoDirection;
 
-        if (currentIndex >= dataList.Count)
-            currentIndex = 0;
-
-        if (currentIndex < 0)
-            currentIndex = dataList.Count - 1;
+        if (currentIndex >= currentSource.Count) currentIndex = 0;
+        if (currentIndex < 0) currentIndex = currentSource.Count - 1;
 
         DisplayCurrentData();
     }
@@ -712,31 +654,22 @@ public partial class Form1 : Form
 
     private void cmbSpeed_SelectedIndexChanged(object sender, EventArgs e)
     {
-        double speed =
-        Convert.ToDouble(cmbSpeed.SelectedItem);
-
-        autoTimer.Interval =
-            (int)(1000 / speed);
+        double speed = Convert.ToDouble(cmbSpeed.SelectedItem);
+        autoTimer.Interval = (int)(1000 / speed);
     }
 
-    private void txtLog_TextChanged(object sender, EventArgs e)
-    {
-
-    }
+    private void txtLog_TextChanged(object sender, EventArgs e) { }
 }
 
 // catalog JSON 데이터 클래스
 public class DonkeyData
 {
-    // 이미지 파일 이름
     [JsonProperty("cam/image_array")]
     public string ImagePath { get; set; }
 
-    // 조향값(angle)
     [JsonProperty("user/angle")]
     public float Angle { get; set; }
 
-    // 속도값(throttle)
     [JsonProperty("user/throttle")]
     public float Throttle { get; set; }
 }
