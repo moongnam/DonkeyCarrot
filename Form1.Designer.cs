@@ -412,6 +412,7 @@ partial class Form1
         btnTrain.UseVisualStyleBackColor = false;
         btnTrain.Click += btnTrain_Click_1;
         // 
+        // 
         // Form1
         // 
         AutoScaleDimensions = new SizeF(9F, 20F);
