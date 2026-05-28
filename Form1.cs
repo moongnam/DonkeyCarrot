@@ -37,8 +37,7 @@ public partial class Form1 : Form
 
     Process trainProcess = null;
 
-    // 학습 중지 요청 여부
-    bool stopRequested = false;
+    
 
     public Form1()
     {
@@ -689,13 +688,32 @@ public partial class Form1 : Form
             {
                 string log = ev.Data;
 
+                // 깨지는 문자 제거
+                log = log.Replace("\b", "");
+                log = log.Replace("\r", "");
+
                 log = log.Replace("Epoch", "학습");
-                log = log.Replace("loss", "손실값");
+
+                // 검증 loss 먼저 변환
+                log = log.Replace("val_n_outputs0_loss", "검증 조향각 오차값");
+                log = log.Replace("val_n_outputs1_loss", "검증 속도 오차값");
+                log = log.Replace("val_loss", "검증 전체 오차값");
+
+                // 일반 loss 변환
+                log = log.Replace("n_outputs0_loss", "조향각 오차값");
+                log = log.Replace("n_outputs1_loss", "속도 오차값");
+                log = log.Replace("loss", "전체 오차값");
+
                 log = log.Replace("Loading", "불러오는 중");
                 log = log.Replace("Saving", "저장 중");
                 log = log.Replace("Training", "학습");
                 log = log.Replace("Complete", "완료");
                 log = log.Replace("Model", "모델");
+                log = log.Replace("ETA", "예상 시간");
+
+                log = log.Replace("did not improve from", "이전 최고값보다 좋아지지 않음:");
+                log = log.Replace("improved from", "개선됨:");
+                log = log.Replace("saving model to", "모델 저장 위치:");
 
                 if (!IsDisposed && txtLog.IsHandleCreated)
                 {
@@ -703,27 +721,6 @@ public partial class Form1 : Form
                     {
                         txtLog.AppendText(log + Environment.NewLine);
                     }));
-
-                    if (log.Contains("학습"))
-                    {
-                        if (stopRequested)
-                        {
-                            trainProcess.Kill();
-
-                            Invoke(new Action(() =>
-                            {
-                                txtLog.AppendText(
-                                    "학습 종료 요청" +
-                                    Environment.NewLine
-                                );
-
-                                lblStatus.Text = "상태: 학습 중지";
-                                lblStatus.ForeColor = Color.Orange;
-                            }));
-
-                            stopRequested = false;
-                        }
-                    }
                 }
             }
         };
@@ -734,23 +731,20 @@ public partial class Form1 : Form
             {
                 string log = ev.Data;
 
+                log = log.Replace("\b", "");
+                log = log.Replace("\r", "");
+
                 log = log.Replace("ERROR", "오류");
                 log = log.Replace("failed", "실패");
                 log = log.Replace("No module named", "모듈을 찾을 수 없습니다");
 
-                Invoke(new Action(() =>
+                if (!IsDisposed && txtLog.IsHandleCreated)
                 {
-                    if (log.Contains("오류") || log.Contains("실패") || log.Contains("모듈을 찾을 수 없습니다"))
+                    Invoke(new Action(() =>
                     {
-                        txtLog.AppendText("[오류] " + log + Environment.NewLine);
-                        lblStatus.Text = "상태: 오류 발생!";
-                        lblStatus.ForeColor = Color.Red;
-                    }
-                    else
-                    {
-                        txtLog.AppendText("[로그] " + log + Environment.NewLine);
-                    }
-                }));
+                        txtLog.AppendText(log + Environment.NewLine);
+                    }));
+                }
             }
         };
 
@@ -766,7 +760,7 @@ public partial class Form1 : Form
                 {
                     txtLog.AppendText(Environment.NewLine);
 
-                    if (exitCode == 0)
+                    if (exitCode == 0 || exitCode == 130)
                     {
                         txtLog.AppendText("학습이 완료되었습니다." + Environment.NewLine);
                         lblStatus.Text = "상태: 학습 완료";
@@ -852,14 +846,26 @@ public partial class Form1 : Form
 
     private void btnStopTrain_Click(object sender, EventArgs e)
     {
-        if (trainProcess != null && !trainProcess.HasExited)
+        try
         {
-            stopRequested = true;
+            ProcessStartInfo stopPsi = new ProcessStartInfo();
 
-            txtLog.AppendText(
-                "학습 중지 요청됨..." +
-                Environment.NewLine
-            );
+            stopPsi.FileName = @"C:\Windows\System32\wsl.exe";
+            stopPsi.Arguments = "-d Ubuntu-22.04 -- bash -c \"pkill -INT -f 'python train.py'\"";
+
+            stopPsi.UseShellExecute = false;
+            stopPsi.CreateNoWindow = true;
+
+            Process.Start(stopPsi);
+
+            txtLog.AppendText("학습 중지 요청됨..." + Environment.NewLine);
+
+            lblStatus.Text = "상태: 안전 종료 중...";
+            lblStatus.ForeColor = Color.Orange;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("학습 중지 요청 실패: " + ex.Message);
         }
     }
 
