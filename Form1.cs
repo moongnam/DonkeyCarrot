@@ -33,10 +33,7 @@ public partial class Form1 : Form
 
     int autoDirection = 1;
 
-    // 💡 UI 디자인 텍스트박스의 Name을 아래와 매칭하거나 속성창에서 변경해 주세요!
-    // 만약 디자이너 파일(Form1.Designer.cs)에 이미 선언되어 있다면 아래 두 줄은 주석 처리하거나 지우셔도 됩니다.
-    // private TextBox txtThrottleFilter; 
-    // private TextBox txtAngleFilter;
+    
 
     Process trainProcess = null;
 
