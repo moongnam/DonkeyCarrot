@@ -200,8 +200,8 @@ public partial class Form1 : Form
         if (dataList == null || dataList.Count == 0) return;
 
         // 입력 텍스트 가져오기 및 공백 제거
-        string throttleInput = txtThrottleFilter.Text.Replace(" ", "");
-        string angleInput = txtAngleFilter.Text.Replace(" ", "");
+        string throttleInput = txtThrottleF.Text.Replace(" ", "");
+        string angleInput = txtAngleF.Text.Replace(" ", "");
 
         // 둘 다 아무것도 입력하지 않았을 때 예외 처리
         if ((string.IsNullOrEmpty(throttleInput) || throttleInput == "throttle>0") &&
@@ -286,8 +286,8 @@ public partial class Form1 : Form
     // 초기화 버튼 : 필터링된 리스트를 풀고 전체 리스트로 복구
     private void btn_Retry_Click(object sender, EventArgs e)
     {
-        txtThrottleFilter.Text = "throttle>0";
-        txtAngleFilter.Text = "angle>0";
+        txtThrottleF.Text = "throttle>0";
+        txtAngleF.Text = "angle>0";
         UpdateFileList();
         DrawGraph("Angle");
     }
