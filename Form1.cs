@@ -33,6 +33,12 @@ public partial class Form1 : Form
 
     int autoDirection = 1;
 
+
+    Process trainProcess = null;
+
+    // 학습 중지 요청 여부
+    bool stopRequested = false;
+
     public Form1()
     {
         InitializeComponent();
@@ -484,7 +490,7 @@ public partial class Form1 : Form
             .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
             .Replace("\\", "/");
 
-        Process trainProcess = null;
+        
         ProcessStartInfo psi = new ProcessStartInfo();
 
         psi.FileName = @"C:\Windows\System32\wsl.exe";
@@ -534,6 +540,27 @@ public partial class Form1 : Form
                     {
                         txtLog.AppendText(log + Environment.NewLine);
                     }));
+
+                    if (log.Contains("학습"))
+                    {
+                        if (stopRequested)
+                        {
+                            trainProcess.Kill();
+
+                            Invoke(new Action(() =>
+                            {
+                                txtLog.AppendText(
+                                    "학습 종료 요청" +
+                                    Environment.NewLine
+                                );
+
+                                lblStatus.Text = "상태: 학습 중지";
+                                lblStatus.ForeColor = Color.Orange;
+                            }));
+
+                            stopRequested = false;
+                        }
+                    }
                 }
             }
         };
@@ -550,7 +577,7 @@ public partial class Form1 : Form
 
                 Invoke(new Action(() =>
                 {
-                    if (log.Contains("오류") || log.Contains("실패") || log.Contains("Traceback") || log.Contains("Exception"))
+                    if (log.Contains("오류") || log.Contains("실패") || log.Contains("모듈을 찾을 수 없습니다"))
                     {
                         txtLog.AppendText("[오류] " + log + Environment.NewLine);
                         lblStatus.Text = "상태: 오류 발생!";
@@ -659,6 +686,19 @@ public partial class Form1 : Form
     }
 
     private void txtLog_TextChanged(object sender, EventArgs e) { }
+
+    private void btnStopTrain_Click(object sender, EventArgs e)
+    {
+        if (trainProcess != null && !trainProcess.HasExited)
+        {
+            stopRequested = true;
+
+            txtLog.AppendText(
+                "학습 중지 요청됨..." +
+                Environment.NewLine
+            );
+        }
+    }
 }
 
 // catalog JSON 데이터 클래스
