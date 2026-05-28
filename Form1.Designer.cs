@@ -30,6 +30,7 @@ partial class Form1
     {
         tabcMain = new TabControl();
         tabPage1 = new TabPage();
+        label2 = new Label();
         txtAngleFilter = new TextBox();
         txtThrottleFilter = new TextBox();
         label1 = new Label();
@@ -63,6 +64,8 @@ partial class Form1
         txtCondaEnv = new TextBox();
         txtLog = new TextBox();
         btnTrain = new Button();
+        txtThrottleF = new TextBox();
+        txtAngleF = new TextBox();
         tabcMain.SuspendLayout();
         tabPage1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pic_Graph).BeginInit();
@@ -83,6 +86,9 @@ partial class Form1
         // 
         // tabPage1
         // 
+        tabPage1.Controls.Add(txtAngleF);
+        tabPage1.Controls.Add(txtThrottleF);
+        tabPage1.Controls.Add(label2);
         tabPage1.Controls.Add(txtAngleFilter);
         tabPage1.Controls.Add(txtThrottleFilter);
         tabPage1.Controls.Add(label1);
@@ -117,11 +123,20 @@ partial class Form1
         tabPage1.Text = "tabPage1";
         tabPage1.UseVisualStyleBackColor = true;
         // 
+        // label2
+        // 
+        label2.AutoSize = true;
+        label2.Location = new Point(520, 427);
+        label2.Name = "label2";
+        label2.Size = new Size(69, 20);
+        label2.TabIndex = 27;
+        label2.Text = "조건입력";
+        // 
         // txtAngleFilter
         // 
         txtAngleFilter.Location = new Point(920, 770);
         txtAngleFilter.Name = "txtAngleFilter";
-        txtAngleFilter.Size = new Size(200, 61);
+        txtAngleFilter.Size = new Size(200, 27);
         txtAngleFilter.TabIndex = 26;
         txtAngleFilter.Text = "angle>0";
         // 
@@ -129,7 +144,7 @@ partial class Form1
         // 
         txtThrottleFilter.Location = new Point(920, 703);
         txtThrottleFilter.Name = "txtThrottleFilter";
-        txtThrottleFilter.Size = new Size(200, 61);
+        txtThrottleFilter.Size = new Size(200, 27);
         txtThrottleFilter.TabIndex = 25;
         txtThrottleFilter.Text = "throttle>0";
         // 
@@ -139,7 +154,7 @@ partial class Form1
         label1.Font = new Font("맑은 고딕", 15F);
         label1.Location = new Point(731, 703);
         label1.Name = "label1";
-        label1.Size = new Size(192, 54);
+        label1.Size = new Size(120, 35);
         label1.TabIndex = 24;
         label1.Text = "조건입력:";
         // 
@@ -444,6 +459,19 @@ partial class Form1
         btnTrain.UseVisualStyleBackColor = false;
         btnTrain.Click += btnTrain_Click_1;
         // 
+        // txtThrottleF
+        // 
+        txtThrottleF.Location = new Point(618, 424);
+        txtThrottleF.Name = "txtThrottleF";
+        txtThrottleF.Size = new Size(136, 27);
+        txtThrottleF.TabIndex = 28;
+        // 
+        // txtAngleF
+        // 
+        txtAngleF.Location = new Point(618, 466);
+        txtAngleF.Name = "txtAngleF";
+        txtAngleF.Size = new Size(142, 27);
+        txtAngleF.TabIndex = 29;
         // 
         // Form1
         // 
@@ -498,4 +526,10 @@ partial class Form1
     private ComboBox cmbSpeed;
     private Label lblConda;
     private Button btnStopTrain;
+    private Label label1;
+    private TextBox txtThrottleFilter;
+    private TextBox txtAngleFilter;
+    private Label label2;
+    private TextBox txtAngleF;
+    private TextBox txtThrottleF;
 }
