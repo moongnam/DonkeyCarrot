@@ -533,3 +533,4 @@ partial class Form1
     private TextBox txtAngleF;
     private TextBox txtThrottleF;
 }
+

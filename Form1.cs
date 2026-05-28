@@ -823,3 +823,4 @@ public class DonkeyData
     [JsonProperty("user/throttle")]
     public float Throttle { get; set; }
 }
+
