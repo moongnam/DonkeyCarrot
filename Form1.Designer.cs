@@ -60,7 +60,6 @@ partial class Form1
         txtCondaEnv = new TextBox();
         txtLog = new TextBox();
         btnTrain = new Button();
-        label1 = new Label();
         tabcMain.SuspendLayout();
         tabPage1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pic_Graph).BeginInit();
@@ -81,7 +80,6 @@ partial class Form1
         // 
         // tabPage1
         // 
-        tabPage1.Controls.Add(label1);
         tabPage1.Controls.Add(cmbSpeed);
         tabPage1.Controls.Add(btnThrottleGraph);
         tabPage1.Controls.Add(btnAngleGraph);
@@ -208,7 +206,6 @@ partial class Form1
         lbl_Frame.Size = new Size(89, 35);
         lbl_Frame.TabIndex = 14;
         lbl_Frame.Text = "프레임:";
-        lbl_Frame.Click += lbl_Frame_Click;
         // 
         // list_FileCheck
         // 
@@ -224,7 +221,6 @@ partial class Form1
         tbar_Dk.Name = "tbar_Dk";
         tbar_Dk.Size = new Size(640, 56);
         tbar_Dk.TabIndex = 12;
-        tbar_Dk.Scroll += tbar_Dk_Scroll;
         // 
         // btn_Retry
         // 
@@ -416,14 +412,6 @@ partial class Form1
         btnTrain.UseVisualStyleBackColor = false;
         btnTrain.Click += btnTrain_Click_1;
         // 
-        // label1
-        // 
-        label1.AutoSize = true;
-        label1.Location = new Point(388, 39);
-        label1.Name = "label1";
-        label1.Size = new Size(62, 15);
-        label1.TabIndex = 24;
-        label1.Text = "속도 조절:";
         // 
         // Form1
         // 
