@@ -490,7 +490,7 @@ public partial class Form1 : Form
             .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
             .Replace("\\", "/");
 
-
+        
         ProcessStartInfo psi = new ProcessStartInfo();
 
         psi.FileName = @"C:\Windows\System32\wsl.exe";
@@ -687,8 +687,7 @@ public partial class Form1 : Form
 
     private void txtLog_TextChanged(object sender, EventArgs e) { }
 
-    
-    private void btnStopTrain_Click_1(object sender, EventArgs e)
+    private void btnStopTrain_Click(object sender, EventArgs e)
     {
         if (trainProcess != null && !trainProcess.HasExited)
         {

@@ -150,7 +150,7 @@ partial class Form1
         // 
         lbl_ThrottleV.AutoSize = true;
         lbl_ThrottleV.Font = new Font("맑은 고딕", 15F);
-        lbl_ThrottleV.Location = new Point(1331, 72);
+        lbl_ThrottleV.Location = new Point(1286, 72);
         lbl_ThrottleV.Name = "lbl_ThrottleV";
         lbl_ThrottleV.Size = new Size(29, 35);
         lbl_ThrottleV.TabIndex = 19;
@@ -163,9 +163,9 @@ partial class Form1
         lbl_Throttle.Font = new Font("맑은 고딕", 15F);
         lbl_Throttle.Location = new Point(1210, 72);
         lbl_Throttle.Name = "lbl_Throttle";
-        lbl_Throttle.Size = new Size(108, 35);
+        lbl_Throttle.Size = new Size(70, 35);
         lbl_Throttle.TabIndex = 18;
-        lbl_Throttle.Text = "가속도:";
+        lbl_Throttle.Text = "속도:";
         // 
         // lbl_AngleV
         // 
@@ -183,9 +183,9 @@ partial class Form1
         lbl_Angle.Font = new Font("맑은 고딕", 15F);
         lbl_Angle.Location = new Point(1039, 72);
         lbl_Angle.Name = "lbl_Angle";
-        lbl_Angle.Size = new Size(84, 35);
+        lbl_Angle.Size = new Size(95, 35);
         lbl_Angle.TabIndex = 16;
-        lbl_Angle.Text = "각도:";
+        lbl_Angle.Text = "조항각:";
         // 
         // lbl_FrameV
         // 
@@ -203,14 +203,14 @@ partial class Form1
         lbl_Frame.Font = new Font("맑은 고딕", 15F);
         lbl_Frame.Location = new Point(829, 72);
         lbl_Frame.Name = "lbl_Frame";
-        lbl_Frame.Size = new Size(89, 35);
+        lbl_Frame.Size = new Size(95, 35);
         lbl_Frame.TabIndex = 14;
         lbl_Frame.Text = "프레임:";
         // 
         // list_FileCheck
         // 
         list_FileCheck.FormattingEnabled = true;
-        list_FileCheck.Location = new Point(24, 415);
+        list_FileCheck.Location = new Point(40, 410);
         list_FileCheck.Name = "list_FileCheck";
         list_FileCheck.Size = new Size(410, 104);
         list_FileCheck.TabIndex = 13;
@@ -343,13 +343,13 @@ partial class Form1
         // 
         // btnStopTrain
         // 
-        btnStopTrain.Location = new Point(930, 36);
+        btnStopTrain.Location = new Point(852, 30);
         btnStopTrain.Name = "btnStopTrain";
-        btnStopTrain.Size = new Size(118, 51);
+        btnStopTrain.Size = new Size(203, 55);
         btnStopTrain.TabIndex = 5;
         btnStopTrain.Text = "학습 멈춤";
         btnStopTrain.UseVisualStyleBackColor = true;
-        btnStopTrain.Click += btnStopTrain_Click_1;
+        btnStopTrain.Click += btnStopTrain_Click;
         // 
         // lblStatus
         // 
