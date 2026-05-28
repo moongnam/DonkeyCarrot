@@ -33,11 +33,14 @@ public partial class Form1 : Form
 
     int autoDirection = 1;
 
+    int frameStep = 1;
 
 
     Process trainProcess = null;
 
-    
+    bool isAutoPlaying = false;
+
+
 
     public Form1()
     {
@@ -65,23 +68,20 @@ public partial class Form1 : Form
 
         InitializeManagerEvents();
 
-        autoTimer.Interval = 500; // 0.5초 간격으로 자동 재생
-
         autoTimer.Tick += AutoTimer_Tick; // 타이머 틱 이벤트 핸들러 연결
 
-        // 재생 속도 콤보박스 초기화
-        cmbSpeed.Items.Add("0.25");
-        cmbSpeed.Items.Add("0.5");
-        cmbSpeed.Items.Add("0.75");
-        cmbSpeed.Items.Add("1.0");
-        cmbSpeed.Items.Add("1.25");
-        cmbSpeed.Items.Add("1.5");
-        cmbSpeed.Items.Add("1.75");
-        cmbSpeed.Items.Add("2.0");
+        autoTimer.Interval = 100; // 자동재생 기본 속도, 숫자가 작을수록 빠름
 
-        cmbSpeed.SelectedItem = "1.0"; // 기본값 1.0x 설정
+        cmbSpeed.Items.Clear();
+        cmbSpeed.Items.Add("1");
+        cmbSpeed.Items.Add("2");
+        cmbSpeed.Items.Add("3");
+        cmbSpeed.Items.Add("5");
+        cmbSpeed.Items.Add("10");
 
-        cmbSpeed.SelectedIndexChanged += cmbSpeed_SelectedIndexChanged; // 콤보박스 선택 변경 이벤트 핸들러 연결
+        cmbSpeed.SelectedItem = "1";
+
+        cmbSpeed.SelectedIndexChanged += cmbSpeed_SelectedIndexChanged;// 속도 조절 콤보박스 이벤트 핸들러 연결
     }
 
 
@@ -165,6 +165,8 @@ public partial class Form1 : Form
         {
             if (list_FileCheck.SelectedIndex != -1 && list_FileCheck.SelectedIndex != currentIndex)
             {
+                if (isAutoPlaying) return; // 자동재생 중에는 수동 클릭 무시
+
                 currentIndex = list_FileCheck.SelectedIndex;
                 DisplayCurrentData();
             }
@@ -809,6 +811,7 @@ public partial class Form1 : Form
     private void btn_SmallR_Click(object sender, EventArgs e)
     {
         autoDirection = 1;
+        isAutoPlaying = true;
         autoTimer.Start();
     }
 
@@ -817,7 +820,7 @@ public partial class Form1 : Form
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
         if (currentSource == null || currentSource.Count == 0) return;
 
-        currentIndex += autoDirection;
+        currentIndex += autoDirection * frameStep;
 
         if (currentIndex >= currentSource.Count) currentIndex = 0;
         if (currentIndex < 0) currentIndex = currentSource.Count - 1;
@@ -827,19 +830,20 @@ public partial class Form1 : Form
 
     private void btn_Stop_Click(object sender, EventArgs e)
     {
+        isAutoPlaying = false;
         autoTimer.Stop();
     }
 
     private void btn_SmallL_Click(object sender, EventArgs e)
     {
         autoDirection = -1;
+        isAutoPlaying = true;
         autoTimer.Start();
     }
 
     private void cmbSpeed_SelectedIndexChanged(object sender, EventArgs e)
     {
-        double speed = Convert.ToDouble(cmbSpeed.SelectedItem);
-        autoTimer.Interval = (int)(1000 / speed);
+        frameStep = Convert.ToInt32(cmbSpeed.SelectedItem);
     }
 
     private void txtLog_TextChanged(object sender, EventArgs e) { }
