@@ -33,7 +33,7 @@ public partial class Form1 : Form
 
     int autoDirection = 1;
 
-    
+
 
     Process trainProcess = null;
 
@@ -212,7 +212,8 @@ public partial class Form1 : Form
         }
 
         // LINQ 필터링을 사용하여 조건에 맞는 데이터만 추출
-        filteredList = dataList.Where(d => {
+        filteredList = dataList.Where(d =>
+        {
             bool isThrottleMatch = true;
             bool isAngleMatch = true;
 
@@ -595,7 +596,7 @@ public partial class Form1 : Form
             .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
             .Replace("\\", "/");
 
-        
+
         ProcessStartInfo psi = new ProcessStartInfo();
 
         psi.FileName = @"C:\Windows\System32\wsl.exe";
@@ -804,6 +805,10 @@ public partial class Form1 : Form
             );
         }
     }
+
+    private void myTrackbar1_Load(object sender, EventArgs e)
+    {
+            }
 }
 
 // catalog JSON 데이터 클래스
