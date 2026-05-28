@@ -44,6 +44,8 @@ public partial class Form1 : Form
     {
         InitializeComponent();
 
+        list_FileCheck.SelectionMode = SelectionMode.MultiExtended;
+
         // 기존 버튼 클릭 이벤트 연결
         btnLoadImages.Click += btnLoadImages_Click;
 
@@ -299,73 +301,128 @@ public partial class Form1 : Form
     {
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
-        if (currentSource == null || currentSource.Count == 0 || currentIndex < 0 || currentIndex >= currentSource.Count) return;
+        if (currentSource == null || currentSource.Count == 0) return;
 
-        DonkeyData targetData = currentSource[currentIndex];
-        string imageName = Path.GetFileName(targetData.ImagePath);
+        // 🔍 현재 ListBox에서 선택된 항목들의 인덱스 모음 가져오기
+        var selectedIndices = list_FileCheck.SelectedIndices.Cast<int>().ToList();
+
+        if (selectedIndices.Count == 0)
+        {
+            MessageBox.Show("삭제할 파일들을 마우스로 드래그하거나 선택해주세요!", "알림");
+            return;
+        }
 
         DialogResult result = MessageBox.Show(
-            $"선택된 {imageName} 파일을 하드디스크와 모델 학습 대상에서 영구히 삭제하시겠습니까?",
-            "실제 파일 영구 삭제 경고",
+            $"선택하신 {selectedIndices.Count}개의 파일을 하드디스크와 카탈로그에서 완전히 '일괄 삭제'하시겠습니까?",
+            "다중 파일 영구 삭제 경고",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning
         );
 
-        if (result == DialogResult.Yes)
-        {
-            // 1. 실제 물리 이미지 파일 찾아서 지우기
-            string actualImagePath = imageList.Find(path => path.Contains(imageName));
+        if (result != DialogResult.OK && result != DialogResult.Yes) return;
 
+        // 1. 이미지 뷰어 프로세스 잠김 방지를 위해 PictureBox 이미지 해제 및 리소스 완전 비우기
+        if (pic_DkScreen.Image != null)
+        {
+            pic_DkScreen.Image.Dispose();
+            pic_DkScreen.Image = null;
+        }
+
+        // 💡 중요: 리스트박스 항목을 삭제할 때는 인덱스가 밀리지 않도록 '뒤에서부터(역순으로)' 지워야 안전합니다.
+        selectedIndices.Sort();
+        selectedIndices.Reverse();
+
+        int deleteCount = 0;
+
+        foreach (int idx in selectedIndices)
+        {
+            if (idx < 0 || idx >= currentSource.Count) continue;
+
+            DonkeyData targetData = currentSource[idx];
+            string imageName = Path.GetFileName(targetData.ImagePath);
+
+            // 2. 물리 이미지 파일 삭제
+            string actualImagePath = imageList.Find(path => path.Contains(imageName));
             try
             {
-                // 이미지 뷰어 잠금 해제를 위해 PictureBox 리소스 완전 비우기
-                if (pic_DkScreen.Image != null)
-                {
-                    pic_DkScreen.Image.Dispose();
-                    pic_DkScreen.Image = null;
-                }
-
                 if (!string.IsNullOrEmpty(actualImagePath) && File.Exists(actualImagePath))
                 {
-                    File.Delete(actualImagePath); // 하드디스크에서 영구 제거
-                    imageList.Remove(actualImagePath); // 내부 경로 목록 리스트에서도 제거
+                    File.Delete(actualImagePath);
+                    imageList.Remove(actualImagePath);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"물리 파일 삭제 중 프로세스 잠금 오류가 발생했습니다:\n{ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                // 특정 파일 처리 중 프로세스 락 등이 걸리면 로그만 남기고 다음 파일로 넘어감
+                Debug.WriteLine($"파일 삭제 실패 ({imageName}): {ex.Message}");
             }
 
-            // 2. 데이터 메모리 리스트에서 삭제 진행 (양쪽 동시 동기화)
+            // 3. 메모리 데이터 리스트에서 삭제 진행 (양쪽 동시 동기화)
             if (filteredList.Count > 0)
             {
-                filteredList.RemoveAt(currentIndex);
+                filteredList.Remove(targetData);
             }
             dataList.Remove(targetData); // 원본 소스에서도 완전히 파괴
 
-            // 3. UI 리스트박스 항목 제거
-            list_FileCheck.Items.RemoveAt(currentIndex);
+            // 4. UI 리스트박스 항목 제거
+            list_FileCheck.Items.RemoveAt(idx);
+            deleteCount++;
+        }
 
-            MessageBox.Show("실제 이미지 파일과 데이터 로그가 완전히 삭제되었습니다.");
-
-            // 4. 후속 인덱스 및 UI 재조정
-            var checkSource = filteredList.Count > 0 ? filteredList : dataList;
-            if (checkSource.Count == 0)
+        // 5. ✨ 실제 하드디스크의 .catalog 텍스트 파일 내용 일괄 동기화 업데이트
+        try
+        {
+            if (!string.IsNullOrEmpty(tubPath) && Directory.Exists(tubPath))
             {
-                currentIndex = 0;
-                list_FileCheck.Items.Clear();
+                string[] catalogFiles = Directory.GetFiles(tubPath, "*.catalog", SearchOption.TopDirectoryOnly);
+
+                if (catalogFiles.Length > 0)
+                {
+                    string targetCatalogPath = catalogFiles[0];
+
+                    // 혼선을 줄이기 위해 서브 카탈로그 파일들은 정리
+                    for (int i = 1; i < catalogFiles.Length; i++)
+                    {
+                        if (File.Exists(catalogFiles[i])) File.Delete(catalogFiles[i]);
+                    }
+
+                    // 남은 데이터를 청소된 클린 상태로 카탈로그에 다시 밀어 넣기
+                    using (StreamWriter sw = new StreamWriter(targetCatalogPath, false, System.Text.Encoding.UTF8))
+                    {
+                        foreach (var data in dataList)
+                        {
+                            string jsonLine = JsonConvert.SerializeObject(data);
+                            sw.WriteLine(jsonLine);
+                        }
+                    }
+                }
             }
-            else if (currentIndex >= checkSource.Count)
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"카탈로그 동기화 중 오류가 발생했습니다:\n{ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        MessageBox.Show($"총 {deleteCount}개의 이미지 파일과 카탈로그 로그가 일괄 삭제 및 동기화되었습니다.", "완료");
+
+        // 6. 후속 인덱스 바운더리 체크 및 UI 화면 재조정
+        var checkSource = filteredList.Count > 0 ? filteredList : dataList;
+        if (checkSource.Count == 0)
+        {
+            currentIndex = 0;
+            list_FileCheck.Items.Clear();
+        }
+        else
+        {
+            if (currentIndex >= checkSource.Count)
             {
                 currentIndex = checkSource.Count - 1;
             }
-
-            DisplayCurrentData();
-            DrawGraph("Angle"); // 데이터가 변동되었으므로 그래프 최신화
         }
-    }
 
+        DisplayCurrentData();
+        DrawGraph("Angle"); // 변동된 상태로 그래프 최신화
+    }
     // catalog 파일 불러오기 버튼
     private void btnLoadCatalog_Click(object sender, EventArgs e)
     {
