@@ -90,6 +90,7 @@ public partial class Form1 : Form
         // 🔍 현재 활성화된 리스트(필터링 상태 반영) 기준으로 데이터 체크
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
+        // 데이터가 없으면 종료
         if (currentSource == null || currentSource.Count == 0) return;
 
         // 인덱스가 데이터 범위를 벗어나지 않도록 안전장치 설정
@@ -101,38 +102,56 @@ public partial class Form1 : Form
 
         // 2. 우측 상단 라벨에 값 반영
         lbl_FrameV.Text = currentIndex.ToString();
-        lbl_AngleV.Text = currentData.Angle.ToString("F4"); // 소수점 4자리 포맷팅
+
+        // Angle / Throttle 값을 소수점 4자리까지 표시
+        lbl_AngleV.Text = currentData.Angle.ToString("F4");
         lbl_ThrottleV.Text = currentData.Throttle.ToString("F4");
 
         // 3. 하단 트랙바 슬라이더 위치 동기화
         tbar_Dk.Maximum = currentSource.Count - 1;
         tbar_Dk.Value = currentIndex;
 
-        // 4. 왼쪽 아래 파일 리스트의 선택 하이라이트 동기화
+        // 4. 왼쪽 리스트 선택 상태 동기화
+        // ⚠️ 여러 개 드래그 선택 중일 때는 SelectedIndex를 강제로 변경하지 않음
+        // 안 그러면 다중 선택이 풀려버림
         if (list_FileCheck.Items.Count > currentIndex)
         {
-            list_FileCheck.SelectedIndex = currentIndex;
+            // 선택된 항목이 0개 또는 1개일 때만 현재 인덱스 동기화
+            if (list_FileCheck.SelectedIndices.Count <= 1)
+            {
+                list_FileCheck.SelectedIndex = currentIndex;
+            }
         }
 
         // 5. 중앙 PictureBox에 주행 이미지 바인딩
         string imageName = Path.GetFileName(currentData.ImagePath);
+
+        // imageList 안에서 실제 이미지 경로 찾기
         string actualImagePath = imageList.Find(path => path.Contains(imageName));
 
+        // 이미지 파일 존재 여부 확인
         if (!string.IsNullOrEmpty(actualImagePath) && File.Exists(actualImagePath))
         {
-            // PictureBox 이미지 해제 (파일 잠김 방지 및 메모리 관리)
-            if (pic_DkScreen.Image != null) pic_DkScreen.Image.Dispose();
+            // 기존 이미지 제거 (메모리 및 파일 잠김 방지)
+            if (pic_DkScreen.Image != null)
+                pic_DkScreen.Image.Dispose();
 
-            // ⚠️ 파일을 독점하지 않고 메모리로만 읽어오도록 개선 (삭제할 때 파일 잠김 오류를 방지합니다!)
+            // ⚠️ FileStream 사용
+            // 파일을 독점하지 않고 메모리로 읽어서 삭제 충돌 방지
             using (FileStream fs = new FileStream(actualImagePath, FileMode.Open, FileAccess.Read))
             {
                 pic_DkScreen.Image = System.Drawing.Image.FromStream(fs);
             }
+
+            // PictureBox 크기에 맞게 자동 확대/축소
             pic_DkScreen.SizeMode = PictureBoxSizeMode.Zoom;
         }
         else
         {
-            if (pic_DkScreen.Image != null) pic_DkScreen.Image.Dispose();
+            // 이미지 없으면 PictureBox 비우기
+            if (pic_DkScreen.Image != null)
+                pic_DkScreen.Image.Dispose();
+
             pic_DkScreen.Image = null;
         }
     }
@@ -160,18 +179,28 @@ public partial class Form1 : Form
             DisplayCurrentData();
         };
 
-        // list_FileCheck : 파일 목록에서 특정 항목 클릭 시 해당 프레임 갱신
+        // 리스트 선택 이벤트
         list_FileCheck.SelectedIndexChanged += (s, e) =>
         {
-            if (list_FileCheck.SelectedIndex != -1 && list_FileCheck.SelectedIndex != currentIndex)
-            {
-                if (isAutoPlaying) return; // 자동재생 중에는 수동 클릭 무시
+            // 자동재생 중에는 수동 선택 막기
+            if (isAutoPlaying) return;
 
+            // ⚠️ 여러 개 선택 중일 때는
+            // 현재 이미지 이동 및 자동 동기화 중단
+            // 안 그러면 드래그 선택할 때 화면이 계속 바뀜
+            if (list_FileCheck.SelectedIndices.Count != 1)
+                return;
+
+            // 정상적으로 1개만 선택된 경우
+            if (list_FileCheck.SelectedIndex != -1 &&
+                list_FileCheck.SelectedIndex != currentIndex)
+            {
                 currentIndex = list_FileCheck.SelectedIndex;
+
+                // 현재 선택된 이미지 표시
                 DisplayCurrentData();
             }
         };
-
         // 찾기, 초기화, 삭제 버튼 이벤트 바인딩
         btn_Find.Click += btn_Find_Click;
         btn_Retry.Click += btn_Retry_Click;
