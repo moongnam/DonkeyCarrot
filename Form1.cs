@@ -659,6 +659,16 @@ public partial class Form1 : Form
     }
 
     private void txtLog_TextChanged(object sender, EventArgs e) { }
+
+    private void lbl_Frame_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void tbar_Dk_Scroll(object sender, EventArgs e)
+    {
+
+    }
 }
 
 // catalog JSON 데이터 클래스
