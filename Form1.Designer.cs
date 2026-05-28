@@ -30,6 +30,9 @@ partial class Form1
     {
         tabcMain = new TabControl();
         tabPage1 = new TabPage();
+        txtAngleFilter = new TextBox();
+        txtThrottleFilter = new TextBox();
+        label1 = new Label();
         cmbSpeed = new ComboBox();
         btnThrottleGraph = new Button();
         btnAngleGraph = new Button();
@@ -80,6 +83,9 @@ partial class Form1
         // 
         // tabPage1
         // 
+        tabPage1.Controls.Add(txtAngleFilter);
+        tabPage1.Controls.Add(txtThrottleFilter);
+        tabPage1.Controls.Add(label1);
         tabPage1.Controls.Add(cmbSpeed);
         tabPage1.Controls.Add(btnThrottleGraph);
         tabPage1.Controls.Add(btnAngleGraph);
@@ -110,6 +116,32 @@ partial class Form1
         tabPage1.TabIndex = 0;
         tabPage1.Text = "tabPage1";
         tabPage1.UseVisualStyleBackColor = true;
+        // 
+        // txtAngleFilter
+        // 
+        txtAngleFilter.Location = new Point(920, 770);
+        txtAngleFilter.Name = "txtAngleFilter";
+        txtAngleFilter.Size = new Size(200, 61);
+        txtAngleFilter.TabIndex = 26;
+        txtAngleFilter.Text = "angle>0";
+        // 
+        // txtThrottleFilter
+        // 
+        txtThrottleFilter.Location = new Point(920, 703);
+        txtThrottleFilter.Name = "txtThrottleFilter";
+        txtThrottleFilter.Size = new Size(200, 61);
+        txtThrottleFilter.TabIndex = 25;
+        txtThrottleFilter.Text = "throttle>0";
+        // 
+        // label1
+        // 
+        label1.AutoSize = true;
+        label1.Font = new Font("맑은 고딕", 15F);
+        label1.Location = new Point(731, 703);
+        label1.Name = "label1";
+        label1.Size = new Size(192, 54);
+        label1.TabIndex = 24;
+        label1.Text = "조건입력:";
         // 
         // cmbSpeed
         // 
