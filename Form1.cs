@@ -33,6 +33,11 @@ public partial class Form1 : Form
 
     int autoDirection = 1;
 
+    // 💡 UI 디자인 텍스트박스의 Name을 아래와 매칭하거나 속성창에서 변경해 주세요!
+    // 만약 디자이너 파일(Form1.Designer.cs)에 이미 선언되어 있다면 아래 두 줄은 주석 처리하거나 지우셔도 됩니다.
+    // private TextBox txtThrottleFilter; 
+    // private TextBox txtAngleFilter;
+
     public Form1()
     {
         InitializeComponent();
@@ -112,13 +117,19 @@ public partial class Form1 : Form
 
         if (!string.IsNullOrEmpty(actualImagePath) && File.Exists(actualImagePath))
         {
+            // PictureBox 이미지 해제 (파일 잠김 방지 및 메모리 관리)
             if (pic_DkScreen.Image != null) pic_DkScreen.Image.Dispose();
 
-            pic_DkScreen.Image = System.Drawing.Image.FromFile(actualImagePath);
+            // ⚠️ 파일을 독점하지 않고 메모리로만 읽어오도록 개선 (삭제할 때 파일 잠김 오류를 방지합니다!)
+            using (FileStream fs = new FileStream(actualImagePath, FileMode.Open, FileAccess.Read))
+            {
+                pic_DkScreen.Image = System.Drawing.Image.FromStream(fs);
+            }
             pic_DkScreen.SizeMode = PictureBoxSizeMode.Zoom;
         }
         else
         {
+            if (pic_DkScreen.Image != null) pic_DkScreen.Image.Dispose();
             pic_DkScreen.Image = null;
         }
     }
@@ -181,79 +192,174 @@ public partial class Form1 : Form
         }
     }
 
-    // 🔍 찾기 버튼 : 누르면 자동으로 불필요하거나 특정 조건의 데이터를 '솎아내기' 필터링 수행
+    // 🔍 찾기 버튼 : 사용자가 텍스트 상자에 입력한 동적 수식(부호, 숫자)을 기반으로 정밀 솎아내기 수행
     private void btn_Find_Click(object sender, EventArgs e)
     {
         if (dataList == null || dataList.Count == 0) return;
 
-        // 💡 [솎아내기 기준 설정] 
-        // 여기서는 예시로 '완전 직진 주행(Angle 오차가 -0.01 ~ +0.01 사이)' 데이터만 남기고 솎아냅니다.
-        // 만약 '속도가 0인 쓰레기 데이터만 골라내고 싶다'면 d.Throttle == 0 등으로 조건을 바꾸시면 됩니다!
-        filteredList = dataList.Where(d => Math.Abs(d.Angle) < 0.01).ToList();
+        // 입력 텍스트 가져오기 및 공백 제거
+        string throttleInput = txtThrottleFilter.Text.Replace(" ", "");
+        string angleInput = txtAngleFilter.Text.Replace(" ", "");
 
+        // 둘 다 아무것도 입력하지 않았을 때 예외 처리
+        if ((string.IsNullOrEmpty(throttleInput) || throttleInput == "throttle>0") &&
+            (string.IsNullOrEmpty(angleInput) || angleInput == "angle>0"))
+        {
+            MessageBox.Show("솎아낼 수식 조건을 입력해주세요!\n예: throttle>0.2 또는 angle<-0.1", "알림");
+            return;
+        }
+
+        // LINQ 필터링을 사용하여 조건에 맞는 데이터만 추출
+        filteredList = dataList.Where(d => {
+            bool isThrottleMatch = true;
+            bool isAngleMatch = true;
+
+            // 스로틀 조건 체크 (사용자가 기본값 외에 다른 수식을 입력했을 때)
+            if (!string.IsNullOrEmpty(throttleInput) && throttleInput.Contains("throttle") && throttleInput != "throttle>0")
+            {
+                isThrottleMatch = EvaluateExpression(throttleInput, "throttle", d.Throttle);
+            }
+
+            // 앵글 조건 체크 (사용자가 기본값 외에 다른 수식을 입력했을 때)
+            if (!string.IsNullOrEmpty(angleInput) && angleInput.Contains("angle") && angleInput != "angle>0")
+            {
+                isAngleMatch = EvaluateExpression(angleInput, "angle", d.Angle);
+            }
+
+            return isThrottleMatch && isAngleMatch;
+        }).ToList();
+
+        // 솎아낸 결과가 있을 경우 화면 갱신
         if (filteredList.Count > 0)
         {
             list_FileCheck.Items.Clear();
             foreach (var d in filteredList)
             {
-                list_FileCheck.Items.Add($"[솎아냄] {Path.GetFileName(d.ImagePath)} (Angle:{d.Angle:F3})");
+                list_FileCheck.Items.Add(Path.GetFileName(d.ImagePath));
             }
 
             currentIndex = 0;
             DisplayCurrentData();
-            MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 솎아냈습니다.\n[삭제] 버튼을 누르면 학습 제외가 가능합니다.");
+            DrawGraph("Angle"); // 그래프 최신화
+            MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 솎아냈습니다.\n[삭제] 버튼을 누르면 물리 파일 및 학습 대상에서 제외됩니다.");
         }
         else
         {
             filteredList.Clear();
-            MessageBox.Show("솎아내기 조건과 일치하는 데이터가 존재하지 않습니다.");
+            MessageBox.Show("입력하신 솎아내기 조건과 일치하는 데이터가 존재하지 않습니다.", "알림");
+        }
+    }
+
+    // 💡 문자열 수식을 해석해서 크고 작음을 판별해 주는 핵심 도우미 메소드
+    private bool EvaluateExpression(string expression, string keyword, float actualValue)
+    {
+        string formula = expression.Replace(keyword, "");
+        string[] operators = { ">=", "<=", "==", ">", "<" };
+        string selectedOp = "";
+        float targetValue = 0;
+
+        foreach (string op in operators)
+        {
+            if (formula.StartsWith(op))
+            {
+                selectedOp = op;
+                float.TryParse(formula.Replace(op, ""), out targetValue);
+                break;
+            }
+        }
+
+        if (string.IsNullOrEmpty(selectedOp)) return true;
+
+        switch (selectedOp)
+        {
+            case ">": return actualValue > targetValue;
+            case "<": return actualValue < targetValue;
+            case "==": return actualValue == targetValue;
+            case ">=": return actualValue >= targetValue;
+            case "<=": return actualValue <= targetValue;
+            default: return true;
         }
     }
 
     // 초기화 버튼 : 필터링된 리스트를 풀고 전체 리스트로 복구
     private void btn_Retry_Click(object sender, EventArgs e)
     {
+        txtThrottleFilter.Text = "throttle>0";
+        txtAngleFilter.Text = "angle>0";
         UpdateFileList();
+        DrawGraph("Angle");
     }
 
 
-    // 삭제 버튼 : 현재 선택된 프레임을 데이터 리스트에서 제외 (솎아낸 상태에서도 연동됨)
+    // 🔧 삭제 버튼 : 목록 제거뿐만 아니라 하드디스크의 실제 물리 이미지 파일까지 함께 삭제
     private void btn_Del_Click(object sender, EventArgs e)
     {
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
         if (currentSource == null || currentSource.Count == 0 || currentIndex < 0 || currentIndex >= currentSource.Count) return;
 
+        DonkeyData targetData = currentSource[currentIndex];
+        string imageName = Path.GetFileName(targetData.ImagePath);
+
         DialogResult result = MessageBox.Show(
-            $"현재 선택된 {currentIndex + 1}번째 주행 프레임을 모델 학습 대상에서 제외하시겠습니까?",
-            "데이터 정제 확인",
+            $"선택된 {imageName} 파일을 하드디스크와 모델 학습 대상에서 영구히 삭제하시겠습니까?",
+            "실제 파일 영구 삭제 경고",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning
         );
 
         if (result == DialogResult.Yes)
         {
-            // 현재 타겟 데이터 백업
-            DonkeyData targetData = currentSource[currentIndex];
+            // 1. 실제 물리 이미지 파일 찾아서 지우기
+            string actualImagePath = imageList.Find(path => path.Contains(imageName));
 
-            // 🔍 솎아내기 리스트를 보고 있던 중이라면 양쪽 모두에서 동시 삭제 진행
+            try
+            {
+                // 이미지 뷰어 잠금 해제를 위해 PictureBox 리소스 완전 비우기
+                if (pic_DkScreen.Image != null)
+                {
+                    pic_DkScreen.Image.Dispose();
+                    pic_DkScreen.Image = null;
+                }
+
+                if (!string.IsNullOrEmpty(actualImagePath) && File.Exists(actualImagePath))
+                {
+                    File.Delete(actualImagePath); // 하드디스크에서 영구 제거
+                    imageList.Remove(actualImagePath); // 내부 경로 목록 리스트에서도 제거
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"물리 파일 삭제 중 프로세스 잠금 오류가 발생했습니다:\n{ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // 2. 데이터 메모리 리스트에서 삭제 진행 (양쪽 동시 동기화)
             if (filteredList.Count > 0)
             {
                 filteredList.RemoveAt(currentIndex);
             }
-            dataList.Remove(targetData); // 원본 리스트에서도 완전 삭제
+            dataList.Remove(targetData); // 원본 소스에서도 완전히 파괴
 
-            // UI 리스트박스 항목 삭제
+            // 3. UI 리스트박스 항목 제거
             list_FileCheck.Items.RemoveAt(currentIndex);
 
-            MessageBox.Show("해당 프레임 데이터가 성공적으로 제외되었습니다.");
+            MessageBox.Show("실제 이미지 파일과 데이터 로그가 완전히 삭제되었습니다.");
 
-            // 데이터 삭제 후 인덱스 범위 재조정 및 새로고침
+            // 4. 후속 인덱스 및 UI 재조정
             var checkSource = filteredList.Count > 0 ? filteredList : dataList;
-            if (currentIndex >= checkSource.Count) currentIndex = checkSource.Count - 1;
+            if (checkSource.Count == 0)
+            {
+                currentIndex = 0;
+                list_FileCheck.Items.Clear();
+            }
+            else if (currentIndex >= checkSource.Count)
+            {
+                currentIndex = checkSource.Count - 1;
+            }
 
             DisplayCurrentData();
-            DrawGraph("Angle"); // 데이터 변동이 생겼으므로 그래프도 최신화
+            DrawGraph("Angle"); // 데이터가 변동되었으므로 그래프 최신화
         }
     }
 
@@ -262,7 +368,7 @@ public partial class Form1 : Form
     {
         FolderBrowserDialog fbd = new FolderBrowserDialog();
 
-        fbd.Description = "data 폴더 선택";
+        fbd.Description = "data 폴절 선택";
         fbd.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
         if (fbd.ShowDialog() == DialogResult.OK)
@@ -337,7 +443,10 @@ public partial class Form1 : Form
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
         if (currentSource.Count == 0)
+        {
+            pic_Graph.Image = null;
             return;
+        }
 
         int width = pic_Graph.Width;
         int height = pic_Graph.Height;
