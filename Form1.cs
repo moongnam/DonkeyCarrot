@@ -42,6 +42,7 @@ public partial class Form1 : Form
 
 
 
+
     public Form1()
     {
         InitializeComponent();
@@ -202,7 +203,7 @@ public partial class Form1 : Form
             }
         };
         // 찾기, 초기화, 삭제 버튼 이벤트 바인딩
-        btn_Find.Click += btn_Find_Click;
+        //btn_Find.Click += btn_Find_Click;
         btn_Retry.Click += btn_Retry_Click;
         btn_Del.Click += btn_Del_Click;
     }
@@ -227,63 +228,63 @@ public partial class Form1 : Form
     }
 
     // 🔍 찾기 버튼 : 사용자가 텍스트 상자에 입력한 동적 수식(부호, 숫자)을 기반으로 정밀 솎아내기 수행
-    private void btn_Find_Click(object sender, EventArgs e)
-    {
-        if (dataList == null || dataList.Count == 0) return;
+    //private void btn_Find_Click(object sender, EventArgs e)
+    //{
+    //    if (dataList == null || dataList.Count == 0) return;
 
-        // 입력 텍스트 가져오기 및 공백 제거
-        string throttleInput = txtThrottleF.Text.Replace(" ", "");
-        string angleInput = txtAngleF.Text.Replace(" ", "");
+    //    // 입력 텍스트 가져오기 및 공백 제거
+    //    string throttleInput = txtThrottleF.Text.Replace(" ", "");
+    //    string angleInput = txtAngleF.Text.Replace(" ", "");
 
-        // 둘 다 아무것도 입력하지 않았을 때 예외 처리
-        if ((string.IsNullOrEmpty(throttleInput) || throttleInput == "throttle>0") &&
-            (string.IsNullOrEmpty(angleInput) || angleInput == "angle>0"))
-        {
-            MessageBox.Show("솎아낼 수식 조건을 입력해주세요!\n예: throttle>0.2 또는 angle<-0.1", "알림");
-            return;
-        }
+    //    // 둘 다 아무것도 입력하지 않았을 때 예외 처리
+    //    if ((string.IsNullOrEmpty(throttleInput) || throttleInput == "throttle>0") &&
+    //        (string.IsNullOrEmpty(angleInput) || angleInput == "angle>0"))
+    //    {
+    //        MessageBox.Show("솎아낼 수식 조건을 입력해주세요!\n예: throttle>0.2 또는 angle<-0.1", "알림");
+    //        return;
+    //    }
 
-        // LINQ 필터링을 사용하여 조건에 맞는 데이터만 추출
-        filteredList = dataList.Where(d =>
-        {
-            bool isThrottleMatch = true;
-            bool isAngleMatch = true;
+    //    // LINQ 필터링을 사용하여 조건에 맞는 데이터만 추출
+    //    filteredList = dataList.Where(d =>
+    //    {
+    //        bool isThrottleMatch = true;
+    //        bool isAngleMatch = true;
 
-            // 스로틀 조건 체크 (사용자가 기본값 외에 다른 수식을 입력했을 때)
-            if (!string.IsNullOrEmpty(throttleInput) && throttleInput.Contains("throttle") && throttleInput != "throttle>0")
-            {
-                isThrottleMatch = EvaluateExpression(throttleInput, "throttle", d.Throttle);
-            }
+    //        // 스로틀 조건 체크 (사용자가 기본값 외에 다른 수식을 입력했을 때)
+    //        if (!string.IsNullOrEmpty(throttleInput) && throttleInput.Contains("throttle") && throttleInput != "throttle>0")
+    //        {
+    //            isThrottleMatch = EvaluateExpression(throttleInput, "throttle", d.Throttle);
+    //        }
 
-            // 앵글 조건 체크 (사용자가 기본값 외에 다른 수식을 입력했을 때)
-            if (!string.IsNullOrEmpty(angleInput) && angleInput.Contains("angle") && angleInput != "angle>0")
-            {
-                isAngleMatch = EvaluateExpression(angleInput, "angle", d.Angle);
-            }
+    //        // 앵글 조건 체크 (사용자가 기본값 외에 다른 수식을 입력했을 때)
+    //        if (!string.IsNullOrEmpty(angleInput) && angleInput.Contains("angle") && angleInput != "angle>0")
+    //        {
+    //            isAngleMatch = EvaluateExpression(angleInput, "angle", d.Angle);
+    //        }
 
-            return isThrottleMatch && isAngleMatch;
-        }).ToList();
+    //        return isThrottleMatch && isAngleMatch;
+    //    }).ToList();
 
-        // 솎아낸 결과가 있을 경우 화면 갱신
-        if (filteredList.Count > 0)
-        {
-            list_FileCheck.Items.Clear();
-            foreach (var d in filteredList)
-            {
-                list_FileCheck.Items.Add(Path.GetFileName(d.ImagePath));
-            }
+    //    // 솎아낸 결과가 있을 경우 화면 갱신
+    //    if (filteredList.Count > 0)
+    //    {
+    //        list_FileCheck.Items.Clear();
+    //        foreach (var d in filteredList)
+    //        {
+    //            list_FileCheck.Items.Add(Path.GetFileName(d.ImagePath));
+    //        }
 
-            currentIndex = 0;
-            DisplayCurrentData();
-            DrawGraph("Angle"); // 그래프 최신화
-            MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 솎아냈습니다.\n[삭제] 버튼을 누르면 물리 파일 및 학습 대상에서 제외됩니다.");
-        }
-        else
-        {
-            filteredList.Clear();
-            MessageBox.Show("입력하신 솎아내기 조건과 일치하는 데이터가 존재하지 않습니다.", "알림");
-        }
-    }
+    //        currentIndex = 0;
+    //        DisplayCurrentData();
+    //        DrawGraph("Angle"); // 그래프 최신화
+    //        MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 솎아냈습니다.\n[삭제] 버튼을 누르면 물리 파일 및 학습 대상에서 제외됩니다.");
+    //    }
+    //    else
+    //    {
+    //        filteredList.Clear();
+    //        MessageBox.Show("입력하신 솎아내기 조건과 일치하는 데이터가 존재하지 않습니다.", "알림");
+    //    }
+    //}
 
     // 💡 문자열 수식을 해석해서 크고 작음을 판별해 주는 핵심 도우미 메소드
     private bool EvaluateExpression(string expression, string keyword, float actualValue)
