@@ -904,7 +904,27 @@ public partial class Form1 : Form
 
     private void myTrackbar1_Load(object sender, EventArgs e)
     {
-            }
+    }
+
+    private void tabPage1_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void list_FileCheck_SelectedIndexChanged(object sender, EventArgs e)
+    {
+
+    }
+
+    private void label3_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void tabp_Serve_Click(object sender, EventArgs e)
+    {
+
+    }
 }
 
 // catalog JSON 데이터 클래스
