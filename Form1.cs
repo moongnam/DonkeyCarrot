@@ -977,7 +977,7 @@ public partial class Form1 : Form
         }
     }
 
-    private void myTrackbar1_Load(object sender, EventArgs e)
+    private void tbar_Dk_Load(object sender, EventArgs e)
     {
     }
 
