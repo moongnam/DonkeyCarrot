@@ -207,7 +207,7 @@ public partial class Form1 : Form
             }
         };
         // 찾기, 초기화, 삭제 버튼 이벤트 바인딩
-        //btn_Find.Click += btn_Find_Click;
+        btn_Find.Click += btn_Find_Click;
         btn_Retry.Click += btn_Retry_Click;
         btn_Del.Click += btn_Del_Click;
     }
@@ -232,65 +232,94 @@ public partial class Form1 : Form
     }
 
     // 🔍 찾기 버튼 : 사용자가 텍스트 상자에 입력한 동적 수식(부호, 숫자)을 기반으로 정밀 솎아내기 수행
-    //private void btn_Find_Click(object sender, EventArgs e)
-    //{
-    //    if (dataList == null || dataList.Count == 0) return;
+    private void btn_Find_Click(object sender, EventArgs e)
+    {
+        if (dataList == null || dataList.Count == 0)
+        {
+            MessageBox.Show("먼저 카탈로그 데이터를 불러와 주세요.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
 
-    //    // 입력 텍스트 가져오기 및 공백 제거
-    //    string throttleInput = txtThrottleF.Text.Replace(" ", "");
-    //    string angleInput = txtAngleF.Text.Replace(" ", "");
+        // 원본 데이터를 복사하여 필터링의 기준 리스트로 삼습니다.
+        var resultList = dataList.ToList();
+        bool isFiltered = false;
 
-    //    // 둘 다 아무것도 입력하지 않았을 때 예외 처리
-    //    if ((string.IsNullOrEmpty(throttleInput) || throttleInput == "throttle>0") &&
-    //        (string.IsNullOrEmpty(angleInput) || angleInput == "angle>0"))
-    //    {
-    //        MessageBox.Show("솎아낼 수식 조건을 입력해주세요!\n예: throttle>0.2 또는 angle<-0.1", "알림");
-    //        return;
-    //    }
+        // --- [ 1. 조향각(Angle) 솎아내기 조건 체크 ] ---
+        // 최소값(txtAngleF)과 최대값(txtAngleF2) 칸이 모두 입력되었을 때만 필터링을 수행합니다.
+        if (!string.IsNullOrWhiteSpace(txtAngleF.Text) && !string.IsNullOrWhiteSpace(txtAngleF2.Text))
+        {
+            if (!float.TryParse(txtAngleF.Text, out float angleMin) ||
+                !float.TryParse(txtAngleF2.Text, out float angleMax))
+            {
+                MessageBox.Show("조향각(Angle) 입력 창에 올바른 숫자를 입력해주세요.", "입력 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-    //    // LINQ 필터링을 사용하여 조건에 맞는 데이터만 추출
-    //    filteredList = dataList.Where(d =>
-    //    {
-    //        bool isThrottleMatch = true;
-    //        bool isAngleMatch = true;
+            if (angleMin > angleMax)
+            {
+                MessageBox.Show("조향각(Angle)의 시작 값이 종료 값보다 클 수 없습니다.", "범위 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-    //        // 스로틀 조건 체크 (사용자가 기본값 외에 다른 수식을 입력했을 때)
-    //        if (!string.IsNullOrEmpty(throttleInput) && throttleInput.Contains("throttle") && throttleInput != "throttle>0")
-    //        {
-    //            isThrottleMatch = EvaluateExpression(throttleInput, "throttle", d.Throttle);
-    //        }
+            // 조건 범위에 만족하는 데이터만 필터링
+            resultList = resultList.Where(d => d.Angle >= angleMin && d.Angle <= angleMax).ToList();
+            isFiltered = true;
+        }
 
-    //        // 앵글 조건 체크 (사용자가 기본값 외에 다른 수식을 입력했을 때)
-    //        if (!string.IsNullOrEmpty(angleInput) && angleInput.Contains("angle") && angleInput != "angle>0")
-    //        {
-    //            isAngleMatch = EvaluateExpression(angleInput, "angle", d.Angle);
-    //        }
+        // --- [ 2. 스로틀(Throttle) 솎아내기 조건 체크 ] ---
+        // 최소값(txtThrottleF)과 최대값(txtThrottleF2) 칸이 모두 입력되었을 때만 필터링을 수행합니다.
+        if (!string.IsNullOrWhiteSpace(txtThrottleF.Text) && !string.IsNullOrWhiteSpace(txtThrottleF2.Text))
+        {
+            if (!float.TryParse(txtThrottleF.Text, out float throttleMin) ||
+                !float.TryParse(txtThrottleF2.Text, out float throttleMax))
+            {
+                MessageBox.Show("스로틀(Throttle) 입력 창에 올바른 숫자를 입력해주세요.", "입력 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-    //        return isThrottleMatch && isAngleMatch;
-    //    }).ToList();
+            if (throttleMin > throttleMax)
+            {
+                MessageBox.Show("스로틀(Throttle)의 시작 값이 종료 값보다 클 수 없습니다.", "범위 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-    //    // 솎아낸 결과가 있을 경우 화면 갱신
-    //    if (filteredList.Count > 0)
-    //    {
-    //        list_FileCheck.Items.Clear();
-    //        foreach (var d in filteredList)
-    //        {
-    //            list_FileCheck.Items.Add(Path.GetFileName(d.ImagePath));
-    //        }
+            // 앞서 걸러진 리스트에서 스로틀 조건까지 연속으로 만족하는 데이터 필터링 (교집합)
+            resultList = resultList.Where(d => d.Throttle >= throttleMin && d.Throttle <= throttleMax).ToList();
+            isFiltered = true;
+        }
 
-    //        currentIndex = 0;
-    //        DisplayCurrentData();
-    //        DrawGraph(); // 그래프 최신화
-    //        MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 솎아냈습니다.\n[삭제] 버튼을 누르면 물리 파일 및 학습 대상에서 제외됩니다.");
-    //    }
-    //    else
-    //    {
-    //        filteredList.Clear();
-    //        MessageBox.Show("입력하신 솎아내기 조건과 일치하는 데이터가 존재하지 않습니다.", "알림");
-    //    }
-    //}
+        // --- [ 3. 둘 다 아무것도 입력하지 않았을 때 예외 처리 ] ---
+        if (!isFiltered)
+        {
+            MessageBox.Show("조향각 범위(Angle) 또는 스로틀 범위(Throttle)를 입력창에 정확히 채워주세요!", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
 
-    // 💡 문자열 수식을 해석해서 크고 작음을 판별해 주는 핵심 도우미 메소드
+        // --- [ 4. 최종 결과 검증 및 UI 최신화 화면 갱신 ] ---
+        if (resultList.Count > 0)
+        {
+            filteredList = resultList; // 글로벌 솎아내기 데이터 리스트에 할당
+
+            // 왼쪽 UI 파일 목록 리스트박스 갱신
+            list_FileCheck.Items.Clear();
+            foreach (var d in filteredList)
+            {
+                list_FileCheck.Items.Add(Path.GetFileName(d.ImagePath));
+            }
+
+            currentIndex = 0;       // 인덱스를 필터링된 데이터의 첫 번째 항목으로 설정
+            DisplayCurrentData();  // 이미지 뷰어 화면 및 상단 데이터 라벨 최신화
+            DrawGraph();           // 필터링된 데이터들만 가지고 하단 그래프 다시 그리기
+
+            MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 성공적으로 솎아냈습니다.", "솎아내기 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        else
+        {
+            // 교집합 결과가 0건일 경우, 기존 데이터를 유지하며 알림창을 띄웁니다.
+            MessageBox.Show("입력하신 두 가지 조건을 동시에 만족하는 데이터가 존재하지 않습니다.\n그래프 차트의 수치 스케일을 다시 확인하고 입력해 주세요.", "결과 없음", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+    }
+
     private bool EvaluateExpression(string expression, string keyword, float actualValue)
     {
         string formula = expression.Replace(keyword, "");
@@ -324,10 +353,14 @@ public partial class Form1 : Form
     // 초기화 버튼 : 필터링된 리스트를 풀고 전체 리스트로 복구
     private void btn_Retry_Click(object sender, EventArgs e)
     {
-        txtThrottleF.Text = "throttle>0";
-        txtAngleF.Text = "angle>0";
-        UpdateFileList();
-        DrawGraph();
+        // 입력창 초기화 (공백 혹은 동키카 데이터 기본 범위인 -1 ~ 1 등을 적어두셔도 됩니다)
+        txtAngleF.Text = "";
+        txtAngleF2.Text = "";
+        txtThrottleF.Text = "";
+        txtThrottleF2.Text = "";
+
+        UpdateFileList(); // 전체 원본 데이터 리스트로 복구 및 filteredList.Clear() 수행됨
+        DrawGraph();      // 원본 데이터 기준으로 그래프 다시 그리기
     }
 
 
