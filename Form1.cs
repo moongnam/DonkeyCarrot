@@ -52,9 +52,13 @@ public partial class Form1 : Form
         // 기존 버튼 클릭 이벤트 연결
         btnLoadImages.Click += btnLoadImages_Click;
 
-        // 그래프 이벤트 연결
-        btnAngleGraph.Click += btnAngleGraph_Click;
-        btnThrottleGraph.Click += btnThrottleGraph_Click;
+        // 기본은 Angle만 체크
+        chk_Angle.Checked = true;
+        chk_Throttle.Checked = false;
+
+        // 체크 상태가 바뀌면 그래프 다시 그림
+        chk_Angle.CheckedChanged += chk_Graph_CheckedChanged;
+        chk_Throttle.CheckedChanged += chk_Graph_CheckedChanged;
 
         // pic_Graph 외곽선
         pic_Graph.BorderStyle = BorderStyle.FixedSingle;
@@ -276,7 +280,7 @@ public partial class Form1 : Form
 
     //        currentIndex = 0;
     //        DisplayCurrentData();
-    //        DrawGraph("Angle"); // 그래프 최신화
+    //        DrawGraph(); // 그래프 최신화
     //        MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 솎아냈습니다.\n[삭제] 버튼을 누르면 물리 파일 및 학습 대상에서 제외됩니다.");
     //    }
     //    else
@@ -323,7 +327,7 @@ public partial class Form1 : Form
         txtThrottleF.Text = "throttle>0";
         txtAngleF.Text = "angle>0";
         UpdateFileList();
-        DrawGraph("Angle");
+        DrawGraph();
     }
 
 
@@ -452,8 +456,9 @@ public partial class Form1 : Form
         }
 
         DisplayCurrentData();
-        DrawGraph("Angle"); // 변동된 상태로 그래프 최신화
+        DrawGraph(); // 변동된 상태로 그래프 최신화
     }
+
     // catalog 파일 불러오기 버튼
     private void btnLoadCatalog_Click(object sender, EventArgs e)
     {
@@ -513,27 +518,29 @@ public partial class Form1 : Form
             );
 
             UpdateFileList();
-            DrawGraph("Angle");
+            DrawGraph();
         }
     }
 
-    // 그래프 angle 이나 throttle 선택 버튼
-    private void btnAngleGraph_Click(object sender, EventArgs e)
+    // 체크박스 상태 변경 시 실행
+    private void chk_Graph_CheckedChanged(object sender, EventArgs e)
     {
-        DrawGraph("Angle");
-    }
-
-    private void btnThrottleGraph_Click(object sender, EventArgs e)
-    {
-        DrawGraph("Throttle");
+        DrawGraph();
     }
 
     // 그래프 그리는 함수
-    private void DrawGraph(string graphType)
+    private void DrawGraph()
     {
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
         if (currentSource.Count == 0)
+        {
+            pic_Graph.Image = null;
+            return;
+        }
+
+        // 둘 다 체크 안 되어 있으면 그래프 비우기
+        if (!chk_Angle.Checked && !chk_Throttle.Checked)
         {
             pic_Graph.Image = null;
             return;
@@ -563,7 +570,10 @@ public partial class Form1 : Form
 
         Pen gridPen = new Pen(Color.LightGray, 1);
         Pen axisPen = new Pen(Color.Black, 1);
-        Pen linePen = new Pen(Color.Red, 2);
+
+        // Angle은 빨간색, Throttle은 파란색
+        Pen anglePen = new Pen(Color.Red, 2);
+        Pen throttlePen = new Pen(Color.Blue, 2);
 
         Font font = new Font("Arial", 8);
         Brush textBrush = Brushes.Black;
@@ -573,10 +583,17 @@ public partial class Form1 : Form
 
         foreach (var data in currentSource)
         {
-            float v = graphType == "Angle" ? data.Angle : data.Throttle;
+            if (chk_Angle.Checked)
+            {
+                if (data.Angle < minValue) minValue = data.Angle;
+                if (data.Angle > maxValue) maxValue = data.Angle;
+            }
 
-            if (v < minValue) minValue = v;
-            if (v > maxValue) maxValue = v;
+            if (chk_Throttle.Checked)
+            {
+                if (data.Throttle < minValue) minValue = data.Throttle;
+                if (data.Throttle > maxValue) maxValue = data.Throttle;
+            }
         }
 
         if (maxValue == minValue)
@@ -626,21 +643,45 @@ public partial class Form1 : Form
             }
         }
 
-        for (int i = 0; i < currentSource.Count - 1; i++)
+        // Angle 그래프
+        if (chk_Angle.Checked)
         {
-            float value1 = graphType == "Angle" ? currentSource[i].Angle : currentSource[i].Throttle;
-            float value2 = graphType == "Angle" ? currentSource[i + 1].Angle : currentSource[i + 1].Throttle;
+            for (int i = 0; i < currentSource.Count - 1; i++)
+            {
+                float value1 = currentSource[i].Angle;
+                float value2 = currentSource[i + 1].Angle;
 
-            int x1 = graphLeft + (i * graphWidth / (currentSource.Count - 1));
-            int x2 = graphLeft + ((i + 1) * graphWidth / (currentSource.Count - 1));
+                int x1 = graphLeft + (i * graphWidth / (currentSource.Count - 1));
+                int x2 = graphLeft + ((i + 1) * graphWidth / (currentSource.Count - 1));
 
-            int y1 = graphBottom - (int)((value1 - minValue) / (maxValue - minValue) * graphHeight);
-            int y2 = graphBottom - (int)((value2 - minValue) / (maxValue - minValue) * graphHeight);
+                int y1 = graphBottom - (int)((value1 - minValue) / (maxValue - minValue) * graphHeight);
+                int y2 = graphBottom - (int)((value2 - minValue) / (maxValue - minValue) * graphHeight);
 
-            g.DrawLine(linePen, x1, y1, x2, y2);
+                g.DrawLine(anglePen, x1, y1, x2, y2);
+            }
+
+            g.DrawString("user/angle", font, Brushes.Red, graphRight - 90, graphTop - 20);
         }
 
-        g.DrawString("user/" + graphType.ToLower(), font, Brushes.Red, graphRight - 90, graphTop - 20);
+        // Throttle 그래프
+        if (chk_Throttle.Checked)
+        {
+            for (int i = 0; i < currentSource.Count - 1; i++)
+            {
+                float value1 = currentSource[i].Throttle;
+                float value2 = currentSource[i + 1].Throttle;
+
+                int x1 = graphLeft + (i * graphWidth / (currentSource.Count - 1));
+                int x2 = graphLeft + ((i + 1) * graphWidth / (currentSource.Count - 1));
+
+                int y1 = graphBottom - (int)((value1 - minValue) / (maxValue - minValue) * graphHeight);
+                int y2 = graphBottom - (int)((value2 - minValue) / (maxValue - minValue) * graphHeight);
+
+                g.DrawLine(throttlePen, x1, y1, x2, y2);
+            }
+
+            g.DrawString("user/throttle", font, Brushes.Blue, graphRight - 90, graphTop - 8);
+        }
 
         pic_Graph.Image = bmp;
     }
@@ -923,6 +964,11 @@ public partial class Form1 : Form
     }
 
     private void tabp_Serve_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void pictureBox2_Click(object sender, EventArgs e)
     {
 
     }
