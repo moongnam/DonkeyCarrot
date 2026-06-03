@@ -33,16 +33,32 @@ public partial class Form1 : Form
 
     int autoDirection = 1;
 
+    int frameStep = 1;
+
+
+    Process trainProcess = null;
+
+    bool isAutoPlaying = false;
+
+
+
+
     public Form1()
     {
         InitializeComponent();
 
+        list_FileCheck.SelectionMode = SelectionMode.MultiExtended;
+
         // 기존 버튼 클릭 이벤트 연결
         btnLoadImages.Click += btnLoadImages_Click;
 
-        // 그래프 이벤트 연결
-        btnAngleGraph.Click += btnAngleGraph_Click;
-        btnThrottleGraph.Click += btnThrottleGraph_Click;
+        // 기본은 Angle만 체크
+        chk_Angle.Checked = true;
+        chk_Throttle.Checked = false;
+
+        // 체크 상태가 바뀌면 그래프 다시 그림
+        chk_Angle.CheckedChanged += chk_Graph_CheckedChanged;
+        chk_Throttle.CheckedChanged += chk_Graph_CheckedChanged;
 
         // pic_Graph 외곽선
         pic_Graph.BorderStyle = BorderStyle.FixedSingle;
@@ -57,23 +73,20 @@ public partial class Form1 : Form
 
         InitializeManagerEvents();
 
-        autoTimer.Interval = 500; // 0.5초 간격으로 자동 재생
-
         autoTimer.Tick += AutoTimer_Tick; // 타이머 틱 이벤트 핸들러 연결
 
-        // 재생 속도 콤보박스 초기화
-        cmbSpeed.Items.Add("0.25");
-        cmbSpeed.Items.Add("0.5");
-        cmbSpeed.Items.Add("0.75");
-        cmbSpeed.Items.Add("1.0");
-        cmbSpeed.Items.Add("1.25");
-        cmbSpeed.Items.Add("1.5");
-        cmbSpeed.Items.Add("1.75");
-        cmbSpeed.Items.Add("2.0");
+        autoTimer.Interval = 100; // 자동재생 기본 속도, 숫자가 작을수록 빠름
 
-        cmbSpeed.SelectedItem = "1.0"; // 기본값 1.0x 설정
+        cmbSpeed.Items.Clear();
+        cmbSpeed.Items.Add("1");
+        cmbSpeed.Items.Add("2");
+        cmbSpeed.Items.Add("3");
+        cmbSpeed.Items.Add("5");
+        cmbSpeed.Items.Add("10");
 
-        cmbSpeed.SelectedIndexChanged += cmbSpeed_SelectedIndexChanged; // 콤보박스 선택 변경 이벤트 핸들러 연결
+        cmbSpeed.SelectedItem = "1";
+
+        cmbSpeed.SelectedIndexChanged += cmbSpeed_SelectedIndexChanged;// 속도 조절 콤보박스 이벤트 핸들러 연결
     }
 
 
@@ -82,6 +95,7 @@ public partial class Form1 : Form
         // 🔍 현재 활성화된 리스트(필터링 상태 반영) 기준으로 데이터 체크
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
+        // 데이터가 없으면 종료
         if (currentSource == null || currentSource.Count == 0) return;
 
         // 인덱스가 데이터 범위를 벗어나지 않도록 안전장치 설정
@@ -93,32 +107,56 @@ public partial class Form1 : Form
 
         // 2. 우측 상단 라벨에 값 반영
         lbl_FrameV.Text = currentIndex.ToString();
-        lbl_AngleV.Text = currentData.Angle.ToString("F4"); // 소수점 4자리 포맷팅
+
+        // Angle / Throttle 값을 소수점 4자리까지 표시
+        lbl_AngleV.Text = currentData.Angle.ToString("F4");
         lbl_ThrottleV.Text = currentData.Throttle.ToString("F4");
 
         // 3. 하단 트랙바 슬라이더 위치 동기화
         tbar_Dk.Maximum = currentSource.Count - 1;
         tbar_Dk.Value = currentIndex;
 
-        // 4. 왼쪽 아래 파일 리스트의 선택 하이라이트 동기화
+        // 4. 왼쪽 리스트 선택 상태 동기화
+        // ⚠️ 여러 개 드래그 선택 중일 때는 SelectedIndex를 강제로 변경하지 않음
+        // 안 그러면 다중 선택이 풀려버림
         if (list_FileCheck.Items.Count > currentIndex)
         {
-            list_FileCheck.SelectedIndex = currentIndex;
+            // 선택된 항목이 0개 또는 1개일 때만 현재 인덱스 동기화
+            if (list_FileCheck.SelectedIndices.Count <= 1)
+            {
+                list_FileCheck.SelectedIndex = currentIndex;
+            }
         }
 
         // 5. 중앙 PictureBox에 주행 이미지 바인딩
         string imageName = Path.GetFileName(currentData.ImagePath);
+
+        // imageList 안에서 실제 이미지 경로 찾기
         string actualImagePath = imageList.Find(path => path.Contains(imageName));
 
+        // 이미지 파일 존재 여부 확인
         if (!string.IsNullOrEmpty(actualImagePath) && File.Exists(actualImagePath))
         {
-            if (pic_DkScreen.Image != null) pic_DkScreen.Image.Dispose();
+            // 기존 이미지 제거 (메모리 및 파일 잠김 방지)
+            if (pic_DkScreen.Image != null)
+                pic_DkScreen.Image.Dispose();
 
-            pic_DkScreen.Image = System.Drawing.Image.FromFile(actualImagePath);
+            // ⚠️ FileStream 사용
+            // 파일을 독점하지 않고 메모리로 읽어서 삭제 충돌 방지
+            using (FileStream fs = new FileStream(actualImagePath, FileMode.Open, FileAccess.Read))
+            {
+                pic_DkScreen.Image = System.Drawing.Image.FromStream(fs);
+            }
+
+            // PictureBox 크기에 맞게 자동 확대/축소
             pic_DkScreen.SizeMode = PictureBoxSizeMode.Zoom;
         }
         else
         {
+            // 이미지 없으면 PictureBox 비우기
+            if (pic_DkScreen.Image != null)
+                pic_DkScreen.Image.Dispose();
+
             pic_DkScreen.Image = null;
         }
     }
@@ -146,16 +184,28 @@ public partial class Form1 : Form
             DisplayCurrentData();
         };
 
-        // list_FileCheck : 파일 목록에서 특정 항목 클릭 시 해당 프레임 갱신
+        // 리스트 선택 이벤트
         list_FileCheck.SelectedIndexChanged += (s, e) =>
         {
-            if (list_FileCheck.SelectedIndex != -1 && list_FileCheck.SelectedIndex != currentIndex)
+            // 자동재생 중에는 수동 선택 막기
+            if (isAutoPlaying) return;
+
+            // ⚠️ 여러 개 선택 중일 때는
+            // 현재 이미지 이동 및 자동 동기화 중단
+            // 안 그러면 드래그 선택할 때 화면이 계속 바뀜
+            if (list_FileCheck.SelectedIndices.Count != 1)
+                return;
+
+            // 정상적으로 1개만 선택된 경우
+            if (list_FileCheck.SelectedIndex != -1 &&
+                list_FileCheck.SelectedIndex != currentIndex)
             {
                 currentIndex = list_FileCheck.SelectedIndex;
+
+                // 현재 선택된 이미지 표시
                 DisplayCurrentData();
             }
         };
-
         // 찾기, 초기화, 삭제 버튼 이벤트 바인딩
         btn_Find.Click += btn_Find_Click;
         btn_Retry.Click += btn_Retry_Click;
@@ -181,80 +231,265 @@ public partial class Form1 : Form
         }
     }
 
-    // 🔍 찾기 버튼 : 누르면 자동으로 불필요하거나 특정 조건의 데이터를 '솎아내기' 필터링 수행
+    // 🔍 찾기 버튼 : 사용자가 텍스트 상자에 입력한 동적 수식(부호, 숫자)을 기반으로 정밀 솎아내기 수행
     private void btn_Find_Click(object sender, EventArgs e)
     {
-        if (dataList == null || dataList.Count == 0) return;
-
-        // 💡 [솎아내기 기준 설정] 
-        // 여기서는 예시로 '완전 직진 주행(Angle 오차가 -0.01 ~ +0.01 사이)' 데이터만 남기고 솎아냅니다.
-        // 만약 '속도가 0인 쓰레기 데이터만 골라내고 싶다'면 d.Throttle == 0 등으로 조건을 바꾸시면 됩니다!
-        filteredList = dataList.Where(d => Math.Abs(d.Angle) < 0.01).ToList();
-
-        if (filteredList.Count > 0)
+        if (dataList == null || dataList.Count == 0)
         {
+            MessageBox.Show("먼저 카탈로그 데이터를 불러와 주세요.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        // 원본 데이터를 복사하여 필터링의 기준 리스트로 삼습니다.
+        var resultList = dataList.ToList();
+        bool isFiltered = false;
+
+        // --- [ 1. 조향각(Angle) 솎아내기 조건 체크 ] ---
+        // 최소값(txtAngleF)과 최대값(txtAngleF2) 칸이 모두 입력되었을 때만 필터링을 수행합니다.
+        if (!string.IsNullOrWhiteSpace(txtAngleF.Text) && !string.IsNullOrWhiteSpace(txtAngleF2.Text))
+        {
+            if (!float.TryParse(txtAngleF.Text, out float angleMin) ||
+                !float.TryParse(txtAngleF2.Text, out float angleMax))
+            {
+                MessageBox.Show("조향각(Angle) 입력 창에 올바른 숫자를 입력해주세요.", "입력 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (angleMin > angleMax)
+            {
+                MessageBox.Show("조향각(Angle)의 시작 값이 종료 값보다 클 수 없습니다.", "범위 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // 조건 범위에 만족하는 데이터만 필터링
+            resultList = resultList.Where(d => d.Angle >= angleMin && d.Angle <= angleMax).ToList();
+            isFiltered = true;
+        }
+
+        // --- [ 2. 스로틀(Throttle) 솎아내기 조건 체크 ] ---
+        // 최소값(txtThrottleF)과 최대값(txtThrottleF2) 칸이 모두 입력되었을 때만 필터링을 수행합니다.
+        if (!string.IsNullOrWhiteSpace(txtThrottleF.Text) && !string.IsNullOrWhiteSpace(txtThrottleF2.Text))
+        {
+            if (!float.TryParse(txtThrottleF.Text, out float throttleMin) ||
+                !float.TryParse(txtThrottleF2.Text, out float throttleMax))
+            {
+                MessageBox.Show("스로틀(Throttle) 입력 창에 올바른 숫자를 입력해주세요.", "입력 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (throttleMin > throttleMax)
+            {
+                MessageBox.Show("스로틀(Throttle)의 시작 값이 종료 값보다 클 수 없습니다.", "범위 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // 앞서 걸러진 리스트에서 스로틀 조건까지 연속으로 만족하는 데이터 필터링 (교집합)
+            resultList = resultList.Where(d => d.Throttle >= throttleMin && d.Throttle <= throttleMax).ToList();
+            isFiltered = true;
+        }
+
+        // --- [ 3. 둘 다 아무것도 입력하지 않았을 때 예외 처리 ] ---
+        if (!isFiltered)
+        {
+            MessageBox.Show("조향각 범위(Angle) 또는 스로틀 범위(Throttle)를 입력창에 정확히 채워주세요!", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        // --- [ 4. 최종 결과 검증 및 UI 최신화 화면 갱신 ] ---
+        if (resultList.Count > 0)
+        {
+            filteredList = resultList; // 글로벌 솎아내기 데이터 리스트에 할당
+
+            // 왼쪽 UI 파일 목록 리스트박스 갱신
             list_FileCheck.Items.Clear();
             foreach (var d in filteredList)
             {
-                list_FileCheck.Items.Add($"[솎아냄] {Path.GetFileName(d.ImagePath)} (Angle:{d.Angle:F3})");
+                list_FileCheck.Items.Add(Path.GetFileName(d.ImagePath));
             }
 
-            currentIndex = 0;
-            DisplayCurrentData();
-            MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 솎아냈습니다.\n[삭제] 버튼을 누르면 학습 제외가 가능합니다.");
+            currentIndex = 0;       // 인덱스를 필터링된 데이터의 첫 번째 항목으로 설정
+            DisplayCurrentData();  // 이미지 뷰어 화면 및 상단 데이터 라벨 최신화
+            DrawGraph();           // 필터링된 데이터들만 가지고 하단 그래프 다시 그리기
+
+            MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 성공적으로 솎아냈습니다.", "솎아내기 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         else
         {
-            filteredList.Clear();
-            MessageBox.Show("솎아내기 조건과 일치하는 데이터가 존재하지 않습니다.");
+            // 교집합 결과가 0건일 경우, 기존 데이터를 유지하며 알림창을 띄웁니다.
+            MessageBox.Show("입력하신 두 가지 조건을 동시에 만족하는 데이터가 존재하지 않습니다.\n그래프 차트의 수치 스케일을 다시 확인하고 입력해 주세요.", "결과 없음", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+    }
+
+    private bool EvaluateExpression(string expression, string keyword, float actualValue)
+    {
+        string formula = expression.Replace(keyword, "");
+        string[] operators = { ">=", "<=", "==", ">", "<" };
+        string selectedOp = "";
+        float targetValue = 0;
+
+        foreach (string op in operators)
+        {
+            if (formula.StartsWith(op))
+            {
+                selectedOp = op;
+                float.TryParse(formula.Replace(op, ""), out targetValue);
+                break;
+            }
+        }
+
+        if (string.IsNullOrEmpty(selectedOp)) return true;
+
+        switch (selectedOp)
+        {
+            case ">": return actualValue > targetValue;
+            case "<": return actualValue < targetValue;
+            case "==": return actualValue == targetValue;
+            case ">=": return actualValue >= targetValue;
+            case "<=": return actualValue <= targetValue;
+            default: return true;
         }
     }
 
     // 초기화 버튼 : 필터링된 리스트를 풀고 전체 리스트로 복구
     private void btn_Retry_Click(object sender, EventArgs e)
     {
-        UpdateFileList();
+        // 입력창 초기화 (공백 혹은 동키카 데이터 기본 범위인 -1 ~ 1 등을 적어두셔도 됩니다)
+        txtAngleF.Text = "";
+        txtAngleF2.Text = "";
+        txtThrottleF.Text = "";
+        txtThrottleF2.Text = "";
+
+        UpdateFileList(); // 전체 원본 데이터 리스트로 복구 및 filteredList.Clear() 수행됨
+        DrawGraph();      // 원본 데이터 기준으로 그래프 다시 그리기
     }
 
 
-    // 삭제 버튼 : 현재 선택된 프레임을 데이터 리스트에서 제외 (솎아낸 상태에서도 연동됨)
+    // 🔧 삭제 버튼 : 목록 제거뿐만 아니라 하드디스크의 실제 물리 이미지 파일까지 함께 삭제
     private void btn_Del_Click(object sender, EventArgs e)
     {
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
-        if (currentSource == null || currentSource.Count == 0 || currentIndex < 0 || currentIndex >= currentSource.Count) return;
+        if (currentSource == null || currentSource.Count == 0) return;
+
+        // 🔍 현재 ListBox에서 선택된 항목들의 인덱스 모음 가져오기
+        var selectedIndices = list_FileCheck.SelectedIndices.Cast<int>().ToList();
+
+        if (selectedIndices.Count == 0)
+        {
+            MessageBox.Show("삭제할 파일들을 마우스로 드래그하거나 선택해주세요!", "알림");
+            return;
+        }
 
         DialogResult result = MessageBox.Show(
-            $"현재 선택된 {currentIndex + 1}번째 주행 프레임을 모델 학습 대상에서 제외하시겠습니까?",
-            "데이터 정제 확인",
+            $"선택하신 {selectedIndices.Count}개의 파일을 하드디스크와 카탈로그에서 완전히 '일괄 삭제'하시겠습니까?",
+            "다중 파일 영구 삭제 경고",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning
         );
 
-        if (result == DialogResult.Yes)
-        {
-            // 현재 타겟 데이터 백업
-            DonkeyData targetData = currentSource[currentIndex];
+        if (result != DialogResult.OK && result != DialogResult.Yes) return;
 
-            // 🔍 솎아내기 리스트를 보고 있던 중이라면 양쪽 모두에서 동시 삭제 진행
+        // 1. 이미지 뷰어 프로세스 잠김 방지를 위해 PictureBox 이미지 해제 및 리소스 완전 비우기
+        if (pic_DkScreen.Image != null)
+        {
+            pic_DkScreen.Image.Dispose();
+            pic_DkScreen.Image = null;
+        }
+
+        // 💡 중요: 리스트박스 항목을 삭제할 때는 인덱스가 밀리지 않도록 '뒤에서부터(역순으로)' 지워야 안전합니다.
+        selectedIndices.Sort();
+        selectedIndices.Reverse();
+
+        int deleteCount = 0;
+
+        foreach (int idx in selectedIndices)
+        {
+            if (idx < 0 || idx >= currentSource.Count) continue;
+
+            DonkeyData targetData = currentSource[idx];
+            string imageName = Path.GetFileName(targetData.ImagePath);
+
+            // 2. 물리 이미지 파일 삭제
+            string actualImagePath = imageList.Find(path => path.Contains(imageName));
+            try
+            {
+                if (!string.IsNullOrEmpty(actualImagePath) && File.Exists(actualImagePath))
+                {
+                    File.Delete(actualImagePath);
+                    imageList.Remove(actualImagePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                // 특정 파일 처리 중 프로세스 락 등이 걸리면 로그만 남기고 다음 파일로 넘어감
+                Debug.WriteLine($"파일 삭제 실패 ({imageName}): {ex.Message}");
+            }
+
+            // 3. 메모리 데이터 리스트에서 삭제 진행 (양쪽 동시 동기화)
             if (filteredList.Count > 0)
             {
-                filteredList.RemoveAt(currentIndex);
+                filteredList.Remove(targetData);
             }
-            dataList.Remove(targetData); // 원본 리스트에서도 완전 삭제
+            dataList.Remove(targetData); // 원본 소스에서도 완전히 파괴
 
-            // UI 리스트박스 항목 삭제
-            list_FileCheck.Items.RemoveAt(currentIndex);
-
-            MessageBox.Show("해당 프레임 데이터가 성공적으로 제외되었습니다.");
-
-            // 데이터 삭제 후 인덱스 범위 재조정 및 새로고침
-            var checkSource = filteredList.Count > 0 ? filteredList : dataList;
-            if (currentIndex >= checkSource.Count) currentIndex = checkSource.Count - 1;
-
-            DisplayCurrentData();
-            DrawGraph("Angle"); // 데이터 변동이 생겼으므로 그래프도 최신화
+            // 4. UI 리스트박스 항목 제거
+            list_FileCheck.Items.RemoveAt(idx);
+            deleteCount++;
         }
+
+        // 5. ✨ 실제 하드디스크의 .catalog 텍스트 파일 내용 일괄 동기화 업데이트
+        try
+        {
+            if (!string.IsNullOrEmpty(tubPath) && Directory.Exists(tubPath))
+            {
+                string[] catalogFiles = Directory.GetFiles(tubPath, "*.catalog", SearchOption.TopDirectoryOnly);
+
+                if (catalogFiles.Length > 0)
+                {
+                    string targetCatalogPath = catalogFiles[0];
+
+                    // 혼선을 줄이기 위해 서브 카탈로그 파일들은 정리
+                    for (int i = 1; i < catalogFiles.Length; i++)
+                    {
+                        if (File.Exists(catalogFiles[i])) File.Delete(catalogFiles[i]);
+                    }
+
+                    // 남은 데이터를 청소된 클린 상태로 카탈로그에 다시 밀어 넣기
+                    using (StreamWriter sw = new StreamWriter(targetCatalogPath, false, System.Text.Encoding.UTF8))
+                    {
+                        foreach (var data in dataList)
+                        {
+                            string jsonLine = JsonConvert.SerializeObject(data);
+                            sw.WriteLine(jsonLine);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"카탈로그 동기화 중 오류가 발생했습니다:\n{ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        MessageBox.Show($"총 {deleteCount}개의 이미지 파일과 카탈로그 로그가 일괄 삭제 및 동기화되었습니다.", "완료");
+
+        // 6. 후속 인덱스 바운더리 체크 및 UI 화면 재조정
+        var checkSource = filteredList.Count > 0 ? filteredList : dataList;
+        if (checkSource.Count == 0)
+        {
+            currentIndex = 0;
+            list_FileCheck.Items.Clear();
+        }
+        else
+        {
+            if (currentIndex >= checkSource.Count)
+            {
+                currentIndex = checkSource.Count - 1;
+            }
+        }
+
+        DisplayCurrentData();
+        DrawGraph(); // 변동된 상태로 그래프 최신화
     }
 
     // catalog 파일 불러오기 버튼
@@ -262,7 +497,7 @@ public partial class Form1 : Form
     {
         FolderBrowserDialog fbd = new FolderBrowserDialog();
 
-        fbd.Description = "data 폴더 선택";
+        fbd.Description = "data 폴절 선택";
         fbd.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
         if (fbd.ShowDialog() == DialogResult.OK)
@@ -316,28 +551,33 @@ public partial class Form1 : Form
             );
 
             UpdateFileList();
-            DrawGraph("Angle");
+            DrawGraph();
         }
     }
 
-    // 그래프 angle 이나 throttle 선택 버튼
-    private void btnAngleGraph_Click(object sender, EventArgs e)
+    // 체크박스 상태 변경 시 실행
+    private void chk_Graph_CheckedChanged(object sender, EventArgs e)
     {
-        DrawGraph("Angle");
-    }
-
-    private void btnThrottleGraph_Click(object sender, EventArgs e)
-    {
-        DrawGraph("Throttle");
+        DrawGraph();
     }
 
     // 그래프 그리는 함수
-    private void DrawGraph(string graphType)
+    private void DrawGraph()
     {
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
         if (currentSource.Count == 0)
+        {
+            pic_Graph.Image = null;
             return;
+        }
+
+        // 둘 다 체크 안 되어 있으면 그래프 비우기
+        if (!chk_Angle.Checked && !chk_Throttle.Checked)
+        {
+            pic_Graph.Image = null;
+            return;
+        }
 
         int width = pic_Graph.Width;
         int height = pic_Graph.Height;
@@ -363,7 +603,10 @@ public partial class Form1 : Form
 
         Pen gridPen = new Pen(Color.LightGray, 1);
         Pen axisPen = new Pen(Color.Black, 1);
-        Pen linePen = new Pen(Color.Red, 2);
+
+        // Angle은 빨간색, Throttle은 파란색
+        Pen anglePen = new Pen(Color.Red, 2);
+        Pen throttlePen = new Pen(Color.Blue, 2);
 
         Font font = new Font("Arial", 8);
         Brush textBrush = Brushes.Black;
@@ -373,10 +616,17 @@ public partial class Form1 : Form
 
         foreach (var data in currentSource)
         {
-            float v = graphType == "Angle" ? data.Angle : data.Throttle;
+            if (chk_Angle.Checked)
+            {
+                if (data.Angle < minValue) minValue = data.Angle;
+                if (data.Angle > maxValue) maxValue = data.Angle;
+            }
 
-            if (v < minValue) minValue = v;
-            if (v > maxValue) maxValue = v;
+            if (chk_Throttle.Checked)
+            {
+                if (data.Throttle < minValue) minValue = data.Throttle;
+                if (data.Throttle > maxValue) maxValue = data.Throttle;
+            }
         }
 
         if (maxValue == minValue)
@@ -426,21 +676,45 @@ public partial class Form1 : Form
             }
         }
 
-        for (int i = 0; i < currentSource.Count - 1; i++)
+        // Angle 그래프
+        if (chk_Angle.Checked)
         {
-            float value1 = graphType == "Angle" ? currentSource[i].Angle : currentSource[i].Throttle;
-            float value2 = graphType == "Angle" ? currentSource[i + 1].Angle : currentSource[i + 1].Throttle;
+            for (int i = 0; i < currentSource.Count - 1; i++)
+            {
+                float value1 = currentSource[i].Angle;
+                float value2 = currentSource[i + 1].Angle;
 
-            int x1 = graphLeft + (i * graphWidth / (currentSource.Count - 1));
-            int x2 = graphLeft + ((i + 1) * graphWidth / (currentSource.Count - 1));
+                int x1 = graphLeft + (i * graphWidth / (currentSource.Count - 1));
+                int x2 = graphLeft + ((i + 1) * graphWidth / (currentSource.Count - 1));
 
-            int y1 = graphBottom - (int)((value1 - minValue) / (maxValue - minValue) * graphHeight);
-            int y2 = graphBottom - (int)((value2 - minValue) / (maxValue - minValue) * graphHeight);
+                int y1 = graphBottom - (int)((value1 - minValue) / (maxValue - minValue) * graphHeight);
+                int y2 = graphBottom - (int)((value2 - minValue) / (maxValue - minValue) * graphHeight);
 
-            g.DrawLine(linePen, x1, y1, x2, y2);
+                g.DrawLine(anglePen, x1, y1, x2, y2);
+            }
+
+            g.DrawString("user/angle", font, Brushes.Red, graphRight - 90, graphTop - 20);
         }
 
-        g.DrawString("user/" + graphType.ToLower(), font, Brushes.Red, graphRight - 90, graphTop - 20);
+        // Throttle 그래프
+        if (chk_Throttle.Checked)
+        {
+            for (int i = 0; i < currentSource.Count - 1; i++)
+            {
+                float value1 = currentSource[i].Throttle;
+                float value2 = currentSource[i + 1].Throttle;
+
+                int x1 = graphLeft + (i * graphWidth / (currentSource.Count - 1));
+                int x2 = graphLeft + ((i + 1) * graphWidth / (currentSource.Count - 1));
+
+                int y1 = graphBottom - (int)((value1 - minValue) / (maxValue - minValue) * graphHeight);
+                int y2 = graphBottom - (int)((value2 - minValue) / (maxValue - minValue) * graphHeight);
+
+                g.DrawLine(throttlePen, x1, y1, x2, y2);
+            }
+
+            g.DrawString("user/throttle", font, Brushes.Blue, graphRight - 90, graphTop - 8);
+        }
 
         pic_Graph.Image = bmp;
     }
@@ -484,7 +758,7 @@ public partial class Form1 : Form
             .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
             .Replace("\\", "/");
 
-        Process trainProcess = null;
+
         ProcessStartInfo psi = new ProcessStartInfo();
 
         psi.FileName = @"C:\Windows\System32\wsl.exe";
@@ -520,13 +794,32 @@ public partial class Form1 : Form
             {
                 string log = ev.Data;
 
+                // 깨지는 문자 제거
+                log = log.Replace("\b", "");
+                log = log.Replace("\r", "");
+
                 log = log.Replace("Epoch", "학습");
-                log = log.Replace("loss", "손실값");
+
+                // 검증 loss 먼저 변환
+                log = log.Replace("val_n_outputs0_loss", "검증 조향각 오차값");
+                log = log.Replace("val_n_outputs1_loss", "검증 속도 오차값");
+                log = log.Replace("val_loss", "검증 전체 오차값");
+
+                // 일반 loss 변환
+                log = log.Replace("n_outputs0_loss", "조향각 오차값");
+                log = log.Replace("n_outputs1_loss", "속도 오차값");
+                log = log.Replace("loss", "전체 오차값");
+
                 log = log.Replace("Loading", "불러오는 중");
                 log = log.Replace("Saving", "저장 중");
                 log = log.Replace("Training", "학습");
                 log = log.Replace("Complete", "완료");
                 log = log.Replace("Model", "모델");
+                log = log.Replace("ETA", "예상 시간");
+
+                log = log.Replace("did not improve from", "이전 최고값보다 좋아지지 않음:");
+                log = log.Replace("improved from", "개선됨:");
+                log = log.Replace("saving model to", "모델 저장 위치:");
 
                 if (!IsDisposed && txtLog.IsHandleCreated)
                 {
@@ -544,23 +837,20 @@ public partial class Form1 : Form
             {
                 string log = ev.Data;
 
+                log = log.Replace("\b", "");
+                log = log.Replace("\r", "");
+
                 log = log.Replace("ERROR", "오류");
                 log = log.Replace("failed", "실패");
                 log = log.Replace("No module named", "모듈을 찾을 수 없습니다");
 
-                Invoke(new Action(() =>
+                if (!IsDisposed && txtLog.IsHandleCreated)
                 {
-                    if (log.Contains("오류") || log.Contains("실패") || log.Contains("Traceback") || log.Contains("Exception"))
+                    Invoke(new Action(() =>
                     {
-                        txtLog.AppendText("[오류] " + log + Environment.NewLine);
-                        lblStatus.Text = "상태: 오류 발생!";
-                        lblStatus.ForeColor = Color.Red;
-                    }
-                    else
-                    {
-                        txtLog.AppendText("[로그] " + log + Environment.NewLine);
-                    }
-                }));
+                        txtLog.AppendText(log + Environment.NewLine);
+                    }));
+                }
             }
         };
 
@@ -576,7 +866,7 @@ public partial class Form1 : Form
                 {
                     txtLog.AppendText(Environment.NewLine);
 
-                    if (exitCode == 0)
+                    if (exitCode == 0 || exitCode == 130)
                     {
                         txtLog.AppendText("학습이 완료되었습니다." + Environment.NewLine);
                         lblStatus.Text = "상태: 학습 완료";
@@ -625,6 +915,7 @@ public partial class Form1 : Form
     private void btn_SmallR_Click(object sender, EventArgs e)
     {
         autoDirection = 1;
+        isAutoPlaying = true;
         autoTimer.Start();
     }
 
@@ -633,7 +924,7 @@ public partial class Form1 : Form
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
         if (currentSource == null || currentSource.Count == 0) return;
 
-        currentIndex += autoDirection;
+        currentIndex += autoDirection * frameStep;
 
         if (currentIndex >= currentSource.Count) currentIndex = 0;
         if (currentIndex < 0) currentIndex = currentSource.Count - 1;
@@ -643,22 +934,77 @@ public partial class Form1 : Form
 
     private void btn_Stop_Click(object sender, EventArgs e)
     {
+        isAutoPlaying = false;
         autoTimer.Stop();
     }
 
     private void btn_SmallL_Click(object sender, EventArgs e)
     {
         autoDirection = -1;
+        isAutoPlaying = true;
         autoTimer.Start();
     }
 
     private void cmbSpeed_SelectedIndexChanged(object sender, EventArgs e)
     {
-        double speed = Convert.ToDouble(cmbSpeed.SelectedItem);
-        autoTimer.Interval = (int)(1000 / speed);
+        frameStep = Convert.ToInt32(cmbSpeed.SelectedItem);
     }
 
     private void txtLog_TextChanged(object sender, EventArgs e) { }
+
+    private void btnStopTrain_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            ProcessStartInfo stopPsi = new ProcessStartInfo();
+
+            stopPsi.FileName = @"C:\Windows\System32\wsl.exe";
+            stopPsi.Arguments = "-d Ubuntu-22.04 -- bash -c \"pkill -INT -f 'python train.py'\"";
+
+            stopPsi.UseShellExecute = false;
+            stopPsi.CreateNoWindow = true;
+
+            Process.Start(stopPsi);
+
+            txtLog.AppendText("학습 중지 요청됨..." + Environment.NewLine);
+
+            lblStatus.Text = "상태: 안전 종료 중...";
+            lblStatus.ForeColor = Color.Orange;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("학습 중지 요청 실패: " + ex.Message);
+        }
+    }
+
+    private void myTrackbar1_Load(object sender, EventArgs e)
+    {
+    }
+
+    private void tabPage1_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void list_FileCheck_SelectedIndexChanged(object sender, EventArgs e)
+    {
+
+    }
+
+    private void label3_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void tabp_Serve_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void pictureBox2_Click(object sender, EventArgs e)
+    {
+
+    }
 }
 
 // catalog JSON 데이터 클래스
@@ -673,3 +1019,4 @@ public class DonkeyData
     [JsonProperty("user/throttle")]
     public float Throttle { get; set; }
 }
+
