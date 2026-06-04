@@ -65,18 +65,22 @@ partial class Form1
         btnLoadImages = new Button();
         btnLoadCatalog = new Button();
         tabp_Serve = new TabPage();
+        picTrainGraph = new PictureBox();
         btnStopTrain = new Button();
         lblStatus = new Label();
         lblConda = new Label();
         txtCondaEnv = new TextBox();
         txtLog = new TextBox();
         btnTrain = new Button();
+        textBox1 = new TextBox();
+        textBox2 = new TextBox();
         tabcMain.SuspendLayout();
         tabPage1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pic_Graph).BeginInit();
         ((System.ComponentModel.ISupportInitialize)tbar_Dk).BeginInit();
         ((System.ComponentModel.ISupportInitialize)pic_DkScreen).BeginInit();
         tabp_Serve.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)picTrainGraph).BeginInit();
         SuspendLayout();
         // 
         // tabcMain
@@ -519,6 +523,9 @@ partial class Form1
         // tabp_Serve
         // 
         tabp_Serve.BackColor = SystemColors.WindowFrame;
+        tabp_Serve.Controls.Add(textBox2);
+        tabp_Serve.Controls.Add(textBox1);
+        tabp_Serve.Controls.Add(picTrainGraph);
         tabp_Serve.Controls.Add(btnStopTrain);
         tabp_Serve.Controls.Add(lblStatus);
         tabp_Serve.Controls.Add(lblConda);
@@ -534,6 +541,15 @@ partial class Form1
         tabp_Serve.TabIndex = 1;
         tabp_Serve.Text = "학습";
         tabp_Serve.Click += tabp_Serve_Click;
+        // 
+        // picTrainGraph
+        // 
+        picTrainGraph.BackColor = SystemColors.WindowText;
+        picTrainGraph.Location = new Point(160, 581);
+        picTrainGraph.Name = "picTrainGraph";
+        picTrainGraph.Size = new Size(812, 184);
+        picTrainGraph.TabIndex = 6;
+        picTrainGraph.TabStop = false;
         // 
         // btnStopTrain
         // 
@@ -598,7 +614,7 @@ partial class Form1
         txtLog.Multiline = true;
         txtLog.Name = "txtLog";
         txtLog.ScrollBars = ScrollBars.Vertical;
-        txtLog.Size = new Size(1220, 653);
+        txtLog.Size = new Size(1220, 442);
         txtLog.TabIndex = 1;
         txtLog.TextChanged += txtLog_TextChanged;
         // 
@@ -618,6 +634,22 @@ partial class Form1
         btnTrain.UseVisualStyleBackColor = false;
         btnTrain.Click += btnTrain_Click_1;
         // 
+        // textBox1
+        // 
+        textBox1.Location = new Point(993, 581);
+        textBox1.Name = "textBox1";
+        textBox1.Size = new Size(164, 27);
+        textBox1.TabIndex = 7;
+        textBox1.Text = "빨간선: 학습 오차값";
+        // 
+        // textBox2
+        // 
+        textBox2.Location = new Point(993, 623);
+        textBox2.Name = "textBox2";
+        textBox2.Size = new Size(164, 27);
+        textBox2.TabIndex = 8;
+        textBox2.Text = "파란선: 검증 오차값";
+        // 
         // Form1
         // 
         AutoScaleDimensions = new SizeF(9F, 20F);
@@ -635,6 +667,7 @@ partial class Form1
         ((System.ComponentModel.ISupportInitialize)pic_DkScreen).EndInit();
         tabp_Serve.ResumeLayout(false);
         tabp_Serve.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)picTrainGraph).EndInit();
         ResumeLayout(false);
     }
 
@@ -683,5 +716,8 @@ partial class Form1
     private Button btn_Find;
     private Label lbl_To2;
     private Label lbl_To;
+    private PictureBox picTrainGraph;
+    private TextBox textBox1;
+    private TextBox textBox2;
 }
 
