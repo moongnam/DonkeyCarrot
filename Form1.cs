@@ -120,9 +120,10 @@ public partial class Form1 : Form
         lbl_AngleV.Text = currentData.Angle.ToString("F4");
         lbl_ThrottleV.Text = currentData.Throttle.ToString("F4");
 
-        // 3. 하단 트랙바 슬라이더 위치 동기화
-        tbar_Dk.Maximum = currentSource.Count - 1;
-        tbar_Dk.Value = currentIndex;
+        // 3. 하단 커스텀 재생바 위치 동기화
+        myTrackbar1.Minimum = 0;
+        myTrackbar1.Maximum = currentSource.Count - 1;
+        myTrackbar1.Value = currentIndex;
 
         // 4. 왼쪽 리스트 선택 상태 동기화
         // ⚠️ 여러 개 드래그 선택 중일 때는 SelectedIndex를 강제로 변경하지 않음
@@ -185,10 +186,10 @@ public partial class Form1 : Form
             if (currentIndex > 0) { currentIndex--; DisplayCurrentData(); }
         };
 
-        // tbar_Dk : 트랙바 슬라이더 드래그 시 인덱스 변경 연동
-        tbar_Dk.Scroll += (s, e) =>
+        // myTrackbar1 : 커스텀 재생바 드래그 시 인덱스 변경 연동
+        myTrackbar1.ValueChanged += (s, e) =>
         {
-            currentIndex = tbar_Dk.Value;
+            currentIndex = myTrackbar1.Value;
             DisplayCurrentData();
         };
 
@@ -1128,9 +1129,7 @@ public partial class Form1 : Form
         }
     }
 
-    private void tbar_Dk_Load(object sender, EventArgs e)
-    {
-    }
+   
 
     private void tabPage1_Click(object sender, EventArgs e)
     {
