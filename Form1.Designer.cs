@@ -139,7 +139,7 @@ partial class Form1
         // 
         // lbl_To2
         // 
-        lbl_To2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lbl_To2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         lbl_To2.AutoSize = true;
         lbl_To2.Location = new Point(1061, 604);
         lbl_To2.Margin = new Padding(4, 0, 4, 0);
@@ -150,7 +150,7 @@ partial class Form1
         // 
         // lbl_To
         // 
-        lbl_To.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lbl_To.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         lbl_To.AutoSize = true;
         lbl_To.Location = new Point(1061, 577);
         lbl_To.Margin = new Padding(4, 0, 4, 0);
@@ -161,7 +161,7 @@ partial class Form1
         // 
         // lblThrottle
         // 
-        lblThrottle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lblThrottle.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         lblThrottle.AutoSize = true;
         lblThrottle.Location = new Point(869, 606);
         lblThrottle.Margin = new Padding(4, 0, 4, 0);
@@ -172,7 +172,7 @@ partial class Form1
         // 
         // lblAngle
         // 
-        lblAngle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lblAngle.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         lblAngle.AutoSize = true;
         lblAngle.Location = new Point(869, 577);
         lblAngle.Margin = new Padding(4, 0, 4, 0);
@@ -183,7 +183,7 @@ partial class Form1
         // 
         // txtThrottleF2
         // 
-        txtThrottleF2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        txtThrottleF2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         txtThrottleF2.Location = new Point(1088, 602);
         txtThrottleF2.Margin = new Padding(4, 2, 4, 2);
         txtThrottleF2.Name = "txtThrottleF2";
@@ -192,7 +192,7 @@ partial class Form1
         // 
         // txtAngleF2
         // 
-        txtAngleF2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        txtAngleF2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         txtAngleF2.Location = new Point(1088, 572);
         txtAngleF2.Margin = new Padding(4, 2, 4, 2);
         txtAngleF2.Name = "txtAngleF2";
@@ -212,7 +212,7 @@ partial class Form1
         // 
         // chk_Throttle
         // 
-        chk_Throttle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        chk_Throttle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         chk_Throttle.AutoSize = true;
         chk_Throttle.Location = new Point(166, 574);
         chk_Throttle.Margin = new Padding(4, 2, 4, 2);
@@ -224,7 +224,7 @@ partial class Form1
         // 
         // chk_Angle
         // 
-        chk_Angle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        chk_Angle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         chk_Angle.AutoSize = true;
         chk_Angle.Location = new Point(49, 574);
         chk_Angle.Margin = new Padding(4, 2, 4, 2);
@@ -236,7 +236,7 @@ partial class Form1
         // 
         // pic_Graph
         // 
-        pic_Graph.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        pic_Graph.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         pic_Graph.Location = new Point(49, 602);
         pic_Graph.Margin = new Padding(4, 2, 4, 2);
         pic_Graph.Name = "pic_Graph";
@@ -246,7 +246,7 @@ partial class Form1
         // 
         // txtThrottleF
         // 
-        txtThrottleF.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        txtThrottleF.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         txtThrottleF.Location = new Point(958, 602);
         txtThrottleF.Margin = new Padding(4, 2, 4, 2);
         txtThrottleF.Name = "txtThrottleF";
@@ -255,7 +255,7 @@ partial class Form1
         // 
         // txtAngleF
         // 
-        txtAngleF.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        txtAngleF.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         txtAngleF.Location = new Point(958, 572);
         txtAngleF.Margin = new Padding(4, 2, 4, 2);
         txtAngleF.Name = "txtAngleF";
@@ -264,7 +264,7 @@ partial class Form1
         // 
         // myTrackbar1
         // 
-        myTrackbar1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        myTrackbar1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         myTrackbar1.BackColor = Color.Transparent;
         myTrackbar1.Location = new Point(41, 508);
         myTrackbar1.Margin = new Padding(5, 6, 5, 6);
@@ -289,7 +289,7 @@ partial class Form1
         // 
         // lblFilter
         // 
-        lblFilter.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lblFilter.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         lblFilter.AutoSize = true;
         lblFilter.Location = new Point(891, 551);
         lblFilter.Margin = new Padding(4, 0, 4, 0);
@@ -300,6 +300,7 @@ partial class Form1
         // 
         // cmbSpeed
         // 
+        cmbSpeed.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         cmbSpeed.FormattingEnabled = true;
         cmbSpeed.Location = new Point(580, 42);
         cmbSpeed.Margin = new Padding(4, 2, 4, 2);
@@ -310,7 +311,7 @@ partial class Form1
         // 
         // lbl_ThrottleV
         // 
-        lbl_ThrottleV.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lbl_ThrottleV.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_ThrottleV.AutoSize = true;
         lbl_ThrottleV.Font = new Font("맑은 고딕", 15F);
         lbl_ThrottleV.Location = new Point(511, 734);
@@ -323,7 +324,7 @@ partial class Form1
         // 
         // lbl_Throttle
         // 
-        lbl_Throttle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lbl_Throttle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_Throttle.AutoSize = true;
         lbl_Throttle.Font = new Font("맑은 고딕", 15F);
         lbl_Throttle.Location = new Point(436, 734);
@@ -335,7 +336,7 @@ partial class Form1
         // 
         // lbl_AngleV
         // 
-        lbl_AngleV.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lbl_AngleV.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_AngleV.AutoSize = true;
         lbl_AngleV.Font = new Font("맑은 고딕", 15F);
         lbl_AngleV.Location = new Point(356, 734);
@@ -347,7 +348,7 @@ partial class Form1
         // 
         // lbl_Angle
         // 
-        lbl_Angle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lbl_Angle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_Angle.AutoSize = true;
         lbl_Angle.Font = new Font("맑은 고딕", 15F);
         lbl_Angle.Location = new Point(265, 734);
@@ -359,7 +360,7 @@ partial class Form1
         // 
         // lbl_FrameV
         // 
-        lbl_FrameV.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lbl_FrameV.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_FrameV.AutoSize = true;
         lbl_FrameV.Font = new Font("맑은 고딕", 15F);
         lbl_FrameV.Location = new Point(171, 734);
@@ -371,7 +372,7 @@ partial class Form1
         // 
         // lbl_Frame
         // 
-        lbl_Frame.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        lbl_Frame.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_Frame.AutoSize = true;
         lbl_Frame.Font = new Font("맑은 고딕", 15F);
         lbl_Frame.Location = new Point(76, 734);
@@ -383,7 +384,7 @@ partial class Form1
         // 
         // list_FileCheck
         // 
-        list_FileCheck.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        list_FileCheck.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
         list_FileCheck.FormattingEnabled = true;
         list_FileCheck.Location = new Point(891, 96);
         list_FileCheck.Margin = new Padding(4, 2, 4, 2);
@@ -394,7 +395,7 @@ partial class Form1
         // 
         // tbar_Dk
         // 
-        tbar_Dk.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        tbar_Dk.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         tbar_Dk.Location = new Point(41, 496);
         tbar_Dk.Margin = new Padding(4, 2, 4, 2);
         tbar_Dk.Name = "tbar_Dk";
@@ -425,7 +426,7 @@ partial class Form1
         // 
         // btn_SmallR
         // 
-        btn_SmallR.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        btn_SmallR.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btn_SmallR.Location = new Point(517, 448);
         btn_SmallR.Margin = new Padding(4, 2, 4, 2);
         btn_SmallR.Name = "btn_SmallR";
@@ -437,7 +438,7 @@ partial class Form1
         // 
         // btn_Stop
         // 
-        btn_Stop.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        btn_Stop.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         btn_Stop.Location = new Point(332, 448);
         btn_Stop.Margin = new Padding(4, 2, 4, 2);
         btn_Stop.Name = "btn_Stop";
@@ -472,7 +473,7 @@ partial class Form1
         // 
         // btn_BigR
         // 
-        btn_BigR.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+        btn_BigR.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
         btn_BigR.Location = new Point(746, 96);
         btn_BigR.Margin = new Padding(4, 2, 4, 2);
         btn_BigR.Name = "btn_BigR";
@@ -483,7 +484,7 @@ partial class Form1
         // 
         // pic_DkScreen
         // 
-        pic_DkScreen.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+        pic_DkScreen.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         pic_DkScreen.BackColor = SystemColors.ActiveCaptionText;
         pic_DkScreen.Location = new Point(136, 96);
         pic_DkScreen.Margin = new Padding(4, 2, 4, 2);
