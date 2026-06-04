@@ -12,6 +12,8 @@ namespace DonkeyCarrot;
 
 public partial class Form1 : Form
 {
+    float currentEpochLoss = 0;
+
     // catalog 데이터를 저장할 리스트 (전체 원본 데이터)
     List<DonkeyData> dataList = new List<DonkeyData>();
 
@@ -722,9 +724,8 @@ public partial class Form1 : Form
         pic_Graph.Image = bmp;
     }
 
-    private void DrawTrainGraph() // 학습 과정에서 실시간으로 훈련 loss와 검증 loss를 시각화하는 함수
+    private void DrawTrainGraph()
     {
-
         if (trainLossList.Count < 2)
             return;
 
@@ -881,7 +882,7 @@ public partial class Form1 : Form
                 if (trainMatch.Success && !ev.Data.Contains("val_loss"))
                 {
                     trainLossList.Add(float.Parse(trainMatch.Groups[1].Value));
-                    graphUpdated = true;
+                    graphUpdated = true;   // ← 여기 추가
                 }
 
                 // 깨지는 문자 제거
@@ -1097,6 +1098,11 @@ public partial class Form1 : Form
     }
 
     private void pictureBox2_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void label2_Click(object sender, EventArgs e)
     {
 
     }
