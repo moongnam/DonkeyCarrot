@@ -65,6 +65,8 @@ partial class Form1
         btnLoadImages = new Button();
         btnLoadCatalog = new Button();
         tabp_Serve = new TabPage();
+        label2 = new Label();
+        label1 = new Label();
         picTrainGraph = new PictureBox();
         btnStopTrain = new Button();
         lblStatus = new Label();
@@ -72,8 +74,6 @@ partial class Form1
         txtCondaEnv = new TextBox();
         txtLog = new TextBox();
         btnTrain = new Button();
-        textBox1 = new TextBox();
-        textBox2 = new TextBox();
         tabcMain.SuspendLayout();
         tabPage1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pic_Graph).BeginInit();
@@ -523,8 +523,8 @@ partial class Form1
         // tabp_Serve
         // 
         tabp_Serve.BackColor = SystemColors.WindowFrame;
-        tabp_Serve.Controls.Add(textBox2);
-        tabp_Serve.Controls.Add(textBox1);
+        tabp_Serve.Controls.Add(label2);
+        tabp_Serve.Controls.Add(label1);
         tabp_Serve.Controls.Add(picTrainGraph);
         tabp_Serve.Controls.Add(btnStopTrain);
         tabp_Serve.Controls.Add(lblStatus);
@@ -542,12 +542,34 @@ partial class Form1
         tabp_Serve.Text = "학습";
         tabp_Serve.Click += tabp_Serve_Click;
         // 
+        // label2
+        // 
+        label2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        label2.AutoSize = true;
+        label2.Location = new Point(1108, 611);
+        label2.Name = "label2";
+        label2.Size = new Size(142, 20);
+        label2.TabIndex = 10;
+        label2.Text = "파란선: 검증 오차값";
+        label2.Click += label2_Click;
+        // 
+        // label1
+        // 
+        label1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        label1.AutoSize = true;
+        label1.Location = new Point(1108, 581);
+        label1.Name = "label1";
+        label1.Size = new Size(142, 20);
+        label1.TabIndex = 9;
+        label1.Text = "빨간선: 학습 오차값";
+        // 
         // picTrainGraph
         // 
+        picTrainGraph.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         picTrainGraph.BackColor = SystemColors.WindowText;
         picTrainGraph.Location = new Point(160, 581);
         picTrainGraph.Name = "picTrainGraph";
-        picTrainGraph.Size = new Size(812, 184);
+        picTrainGraph.Size = new Size(942, 184);
         picTrainGraph.TabIndex = 6;
         picTrainGraph.TabStop = false;
         // 
@@ -634,22 +656,6 @@ partial class Form1
         btnTrain.UseVisualStyleBackColor = false;
         btnTrain.Click += btnTrain_Click_1;
         // 
-        // textBox1
-        // 
-        textBox1.Location = new Point(993, 581);
-        textBox1.Name = "textBox1";
-        textBox1.Size = new Size(164, 27);
-        textBox1.TabIndex = 7;
-        textBox1.Text = "빨간선: 학습 오차값";
-        // 
-        // textBox2
-        // 
-        textBox2.Location = new Point(993, 623);
-        textBox2.Name = "textBox2";
-        textBox2.Size = new Size(164, 27);
-        textBox2.TabIndex = 8;
-        textBox2.Text = "파란선: 검증 오차값";
-        // 
         // Form1
         // 
         AutoScaleDimensions = new SizeF(9F, 20F);
@@ -717,7 +723,7 @@ partial class Form1
     private Label lbl_To2;
     private Label lbl_To;
     private PictureBox picTrainGraph;
-    private TextBox textBox1;
-    private TextBox textBox2;
+    private Label label1;
+    private Label label2;
 }
 
