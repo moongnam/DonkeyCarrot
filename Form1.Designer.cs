@@ -139,6 +139,7 @@ partial class Form1
         // 
         // lbl_To2
         // 
+        lbl_To2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lbl_To2.AutoSize = true;
         lbl_To2.Location = new Point(1061, 604);
         lbl_To2.Margin = new Padding(4, 0, 4, 0);
@@ -149,6 +150,7 @@ partial class Form1
         // 
         // lbl_To
         // 
+        lbl_To.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lbl_To.AutoSize = true;
         lbl_To.Location = new Point(1061, 577);
         lbl_To.Margin = new Padding(4, 0, 4, 0);
@@ -159,6 +161,7 @@ partial class Form1
         // 
         // lblThrottle
         // 
+        lblThrottle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lblThrottle.AutoSize = true;
         lblThrottle.Location = new Point(869, 606);
         lblThrottle.Margin = new Padding(4, 0, 4, 0);
@@ -169,6 +172,7 @@ partial class Form1
         // 
         // lblAngle
         // 
+        lblAngle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lblAngle.AutoSize = true;
         lblAngle.Location = new Point(869, 577);
         lblAngle.Margin = new Padding(4, 0, 4, 0);
@@ -179,6 +183,7 @@ partial class Form1
         // 
         // txtThrottleF2
         // 
+        txtThrottleF2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         txtThrottleF2.Location = new Point(1088, 602);
         txtThrottleF2.Margin = new Padding(4, 2, 4, 2);
         txtThrottleF2.Name = "txtThrottleF2";
@@ -187,6 +192,7 @@ partial class Form1
         // 
         // txtAngleF2
         // 
+        txtAngleF2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         txtAngleF2.Location = new Point(1088, 572);
         txtAngleF2.Margin = new Padding(4, 2, 4, 2);
         txtAngleF2.Name = "txtAngleF2";
@@ -195,6 +201,7 @@ partial class Form1
         // 
         // btn_Find
         // 
+        btn_Find.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btn_Find.Location = new Point(1246, 643);
         btn_Find.Margin = new Padding(4, 2, 4, 2);
         btn_Find.Name = "btn_Find";
@@ -236,6 +243,7 @@ partial class Form1
         // 
         // txtThrottleF
         // 
+        txtThrottleF.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         txtThrottleF.Location = new Point(958, 602);
         txtThrottleF.Margin = new Padding(4, 2, 4, 2);
         txtThrottleF.Name = "txtThrottleF";
@@ -244,6 +252,7 @@ partial class Form1
         // 
         // txtAngleF
         // 
+        txtAngleF.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         txtAngleF.Location = new Point(958, 572);
         txtAngleF.Margin = new Padding(4, 2, 4, 2);
         txtAngleF.Name = "txtAngleF";
@@ -276,6 +285,7 @@ partial class Form1
         // 
         // lblFilter
         // 
+        lblFilter.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lblFilter.AutoSize = true;
         lblFilter.Location = new Point(891, 551);
         lblFilter.Margin = new Padding(4, 0, 4, 0);
@@ -363,6 +373,7 @@ partial class Form1
         // 
         // list_FileCheck
         // 
+        list_FileCheck.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         list_FileCheck.FormattingEnabled = true;
         list_FileCheck.Location = new Point(891, 96);
         list_FileCheck.Margin = new Padding(4, 2, 4, 2);
@@ -381,6 +392,7 @@ partial class Form1
         // 
         // btn_Retry
         // 
+        btn_Retry.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btn_Retry.Location = new Point(1363, 568);
         btn_Retry.Margin = new Padding(4, 2, 4, 2);
         btn_Retry.Name = "btn_Retry";
@@ -391,6 +403,7 @@ partial class Form1
         // 
         // btn_Del
         // 
+        btn_Del.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btn_Del.Location = new Point(1246, 568);
         btn_Del.Margin = new Padding(4, 2, 4, 2);
         btn_Del.Name = "btn_Del";
@@ -464,6 +477,7 @@ partial class Form1
         // 
         // btnLoadImages
         // 
+        btnLoadImages.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         btnLoadImages.Location = new Point(1301, 34);
         btnLoadImages.Margin = new Padding(4, 2, 4, 2);
         btnLoadImages.Name = "btnLoadImages";
@@ -474,6 +488,7 @@ partial class Form1
         // 
         // btnLoadCatalog
         // 
+        btnLoadCatalog.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         btnLoadCatalog.Location = new Point(1112, 34);
         btnLoadCatalog.Margin = new Padding(4, 2, 4, 2);
         btnLoadCatalog.Name = "btnLoadCatalog";
