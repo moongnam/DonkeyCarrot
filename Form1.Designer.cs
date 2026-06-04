@@ -64,6 +64,7 @@ partial class Form1
         btnLoadImages = new Button();
         btnLoadCatalog = new Button();
         tabp_Serve = new TabPage();
+        txtTrainLoss = new TextBox();
         label2 = new Label();
         label1 = new Label();
         picTrainGraph = new PictureBox();
@@ -511,6 +512,7 @@ partial class Form1
         // tabp_Serve
         // 
         tabp_Serve.BackColor = SystemColors.WindowFrame;
+        tabp_Serve.Controls.Add(txtTrainLoss);
         tabp_Serve.Controls.Add(label2);
         tabp_Serve.Controls.Add(label1);
         tabp_Serve.Controls.Add(picTrainGraph);
@@ -530,11 +532,21 @@ partial class Form1
         tabp_Serve.Text = "학습";
         tabp_Serve.Click += tabp_Serve_Click;
         // 
+        // txtTrainLoss
+        // 
+        txtTrainLoss.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        txtTrainLoss.Location = new Point(1222, 564);
+        txtTrainLoss.Multiline = true;
+        txtTrainLoss.Name = "txtTrainLoss";
+        txtTrainLoss.ScrollBars = ScrollBars.Vertical;
+        txtTrainLoss.Size = new Size(301, 187);
+        txtTrainLoss.TabIndex = 11;
+        // 
         // label2
         // 
         label2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         label2.AutoSize = true;
-        label2.Location = new Point(1231, 764);
+        label2.Location = new Point(1079, 597);
         label2.Name = "label2";
         label2.Size = new Size(172, 25);
         label2.TabIndex = 10;
@@ -545,7 +557,7 @@ partial class Form1
         // 
         label1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         label1.AutoSize = true;
-        label1.Location = new Point(1231, 726);
+        label1.Location = new Point(1079, 567);
         label1.Name = "label1";
         label1.Size = new Size(172, 25);
         label1.TabIndex = 9;
@@ -555,8 +567,7 @@ partial class Form1
         // 
         picTrainGraph.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         picTrainGraph.BackColor = SystemColors.WindowText;
-        picTrainGraph.Location = new Point(178, 726);
-        picTrainGraph.Margin = new Padding(3, 4, 3, 4);
+        picTrainGraph.Location = new Point(131, 567);
         picTrainGraph.Name = "picTrainGraph";
         picTrainGraph.Size = new Size(1047, 230);
         picTrainGraph.TabIndex = 6;
@@ -712,5 +723,6 @@ partial class Form1
     private PictureBox picTrainGraph;
     private Label label1;
     private Label label2;
+    private TextBox txtTrainLoss;
 }
 
