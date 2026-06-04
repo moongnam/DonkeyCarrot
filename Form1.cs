@@ -13,6 +13,9 @@ namespace DonkeyCarrot;
 public partial class Form1 : Form
 {
     float currentEpochLoss = 0;
+    int epochCount = 0;
+    float previousTrainLoss = -1;
+    float previousValLoss = -1;
 
     // catalog 데이터를 저장할 리스트 (전체 원본 데이터)
     List<DonkeyData> dataList = new List<DonkeyData>();
@@ -822,6 +825,8 @@ public partial class Form1 : Form
         trainLossList.Clear();
         valLossList.Clear();
         picTrainGraph.Image = null;
+        epochCount = 0;
+        txtTrainLoss.Clear();
 
         txtLog.Clear();
 
@@ -874,15 +879,57 @@ public partial class Form1 : Form
                 Match valMatch = Regex.Match(ev.Data, @"val_loss:\s*([0-9.]+)");
                 if (valMatch.Success)
                 {
-                    valLossList.Add(float.Parse(valMatch.Groups[1].Value));
+                    float valLoss = float.Parse(valMatch.Groups[1].Value);
+
+                    string trainStatus = "";
+                    string valStatus = "";
+
+                    if (previousTrainLoss >= 0)
+                    {
+                        trainStatus = currentEpochLoss < previousTrainLoss
+                            ? " (개선됨 ↑)"
+                            : " (악화됨 ↓)";
+                    }
+
+                    if (previousValLoss >= 0)
+                    {
+                        valStatus = valLoss < previousValLoss
+                            ? " (개선됨 ↑)"
+                            : " (악화됨 ↓)";
+                    }
+
+                    valLossList.Add(valLoss);
+                    epochCount++;
+
                     graphUpdated = true;
+
+                    if (!IsDisposed && txtTrainLoss.IsHandleCreated)
+                    {
+                        Invoke(new Action(() =>
+                        {
+                            txtTrainLoss.AppendText(
+                                $"[학습 {epochCount}회차]" +
+                                Environment.NewLine +
+                                $"▶ 학습 오차값 : {currentEpochLoss:F4}{trainStatus}" +
+                                Environment.NewLine +
+                                $"▶ 검증 오차값 : {valLoss:F4}{valStatus}" +
+                                Environment.NewLine +
+                                Environment.NewLine);
+                        }));
+                    }
+
+                    previousTrainLoss = currentEpochLoss;
+                    previousValLoss = valLoss;
                 }
 
                 Match trainMatch = Regex.Match(ev.Data, @"loss:\s*([0-9.]+)");
                 if (trainMatch.Success && !ev.Data.Contains("val_loss"))
                 {
-                    trainLossList.Add(float.Parse(trainMatch.Groups[1].Value));
-                    graphUpdated = true;   // ← 여기 추가
+                    currentEpochLoss = float.Parse(trainMatch.Groups[1].Value);
+
+                    trainLossList.Add(currentEpochLoss);
+
+                    graphUpdated = true;
                 }
 
                 // 깨지는 문자 제거
@@ -910,13 +957,18 @@ public partial class Form1 : Form
                 log = log.Replace("improved from", "개선됨:");
                 log = log.Replace("saving model to", "모델 저장 위치:");
 
-                if (!IsDisposed && txtLog.IsHandleCreated)
+                if (!IsDisposed && !Disposing && IsHandleCreated && txtLog.IsHandleCreated)
                 {
-                    Invoke(new Action(() =>
+                    BeginInvoke(new Action(() =>
                     {
+                        if (IsDisposed || Disposing)
+                            return;
+
                         txtLog.AppendText(log + Environment.NewLine);
 
-                        if (graphUpdated && picTrainGraph.IsHandleCreated)
+                        if (graphUpdated &&
+                            picTrainGraph != null &&
+                            picTrainGraph.IsHandleCreated)
                         {
                             DrawTrainGraph();
                         }
@@ -938,10 +990,13 @@ public partial class Form1 : Form
                 log = log.Replace("failed", "실패");
                 log = log.Replace("No module named", "모듈을 찾을 수 없습니다");
 
-                if (!IsDisposed && txtLog.IsHandleCreated)
+                if (!IsDisposed && !Disposing && IsHandleCreated && txtLog.IsHandleCreated)
                 {
-                    Invoke(new Action(() =>
+                    BeginInvoke(new Action(() =>
                     {
+                        if (IsDisposed || Disposing)
+                            return;
+
                         txtLog.AppendText(log + Environment.NewLine);
                     }));
                 }
