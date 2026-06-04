@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq; // 🔍 LINQ 필터링 검색을 위해 추가
 using System.Windows.Forms;
 using System.Drawing;
+using System.Text.RegularExpressions;
 
 namespace DonkeyCarrot;
 
@@ -40,8 +41,8 @@ public partial class Form1 : Form
 
     bool isAutoPlaying = false;
 
-
-
+    List<float> trainLossList = new List<float>();
+    List<float> valLossList = new List<float>();
 
     public Form1()
     {
@@ -87,6 +88,8 @@ public partial class Form1 : Form
         cmbSpeed.SelectedItem = "1";
 
         cmbSpeed.SelectedIndexChanged += cmbSpeed_SelectedIndexChanged;// 속도 조절 콤보박스 이벤트 핸들러 연결
+
+
     }
 
 
@@ -719,6 +722,73 @@ public partial class Form1 : Form
         pic_Graph.Image = bmp;
     }
 
+    private void DrawTrainGraph() // 학습 과정에서 실시간으로 훈련 loss와 검증 loss를 시각화하는 함수
+    {
+
+        if (trainLossList.Count < 2)
+            return;
+
+        Bitmap bmp = new Bitmap(
+            picTrainGraph.Width,
+            picTrainGraph.Height);
+
+        Graphics g = Graphics.FromImage(bmp);
+
+        g.Clear(Color.White);
+
+        float minLoss = float.MaxValue;
+        float maxLoss = float.MinValue;
+
+        foreach (float v in trainLossList)
+        {
+            minLoss = Math.Min(minLoss, v);
+            maxLoss = Math.Max(maxLoss, v);
+        }
+
+        foreach (float v in valLossList)
+        {
+            minLoss = Math.Min(minLoss, v);
+            maxLoss = Math.Max(maxLoss, v);
+        }
+
+        if (maxLoss == minLoss)
+            maxLoss += 0.001f;
+
+        for (int i = 0; i < trainLossList.Count - 1; i++)
+        {
+            int x1 = i * bmp.Width / (trainLossList.Count - 1);
+            int x2 = (i + 1) * bmp.Width / (trainLossList.Count - 1);
+
+            int y1 = bmp.Height -
+                     (int)((trainLossList[i] - minLoss) /
+                     (maxLoss - minLoss) * bmp.Height);
+
+            int y2 = bmp.Height -
+                     (int)((trainLossList[i + 1] - minLoss) /
+                     (maxLoss - minLoss) * bmp.Height);
+
+            g.DrawLine(Pens.Red, x1, y1, x2, y2);
+        }
+
+        for (int i = 0; i < valLossList.Count - 1; i++)
+        {
+            int x1 = i * bmp.Width / (valLossList.Count - 1);
+            int x2 = (i + 1) * bmp.Width / (valLossList.Count - 1);
+
+            int y1 = bmp.Height -
+                     (int)((valLossList[i] - minLoss) /
+                     (maxLoss - minLoss) * bmp.Height);
+
+            int y2 = bmp.Height -
+                     (int)((valLossList[i + 1] - minLoss) /
+                     (maxLoss - minLoss) * bmp.Height);
+
+            g.DrawLine(Pens.Blue, x1, y1, x2, y2);
+        }
+
+        picTrainGraph.Image = bmp;
+    }
+
     // 이미지 폴더 불러오기 버튼
     private void btnLoadImages_Click(object sender, EventArgs e)
     {
@@ -748,6 +818,10 @@ public partial class Form1 : Form
 
     private void btnTrain_Click_1(object sender, EventArgs e)
     {
+        trainLossList.Clear();
+        valLossList.Clear();
+        picTrainGraph.Image = null;
+
         txtLog.Clear();
 
         string linuxProjectPath = projectPath
@@ -794,18 +868,32 @@ public partial class Form1 : Form
             {
                 string log = ev.Data;
 
+                bool graphUpdated = false;
+
+                Match valMatch = Regex.Match(ev.Data, @"val_loss:\s*([0-9.]+)");
+                if (valMatch.Success)
+                {
+                    valLossList.Add(float.Parse(valMatch.Groups[1].Value));
+                    graphUpdated = true;
+                }
+
+                Match trainMatch = Regex.Match(ev.Data, @"loss:\s*([0-9.]+)");
+                if (trainMatch.Success && !ev.Data.Contains("val_loss"))
+                {
+                    trainLossList.Add(float.Parse(trainMatch.Groups[1].Value));
+                    graphUpdated = true;
+                }
+
                 // 깨지는 문자 제거
                 log = log.Replace("\b", "");
                 log = log.Replace("\r", "");
 
                 log = log.Replace("Epoch", "학습");
 
-                // 검증 loss 먼저 변환
                 log = log.Replace("val_n_outputs0_loss", "검증 조향각 오차값");
                 log = log.Replace("val_n_outputs1_loss", "검증 속도 오차값");
                 log = log.Replace("val_loss", "검증 전체 오차값");
 
-                // 일반 loss 변환
                 log = log.Replace("n_outputs0_loss", "조향각 오차값");
                 log = log.Replace("n_outputs1_loss", "속도 오차값");
                 log = log.Replace("loss", "전체 오차값");
@@ -826,6 +914,11 @@ public partial class Form1 : Form
                     Invoke(new Action(() =>
                     {
                         txtLog.AppendText(log + Environment.NewLine);
+
+                        if (graphUpdated && picTrainGraph.IsHandleCreated)
+                        {
+                            DrawTrainGraph();
+                        }
                     }));
                 }
             }
@@ -868,6 +961,8 @@ public partial class Form1 : Form
 
                     if (exitCode == 0 || exitCode == 130)
                     {
+                        DrawTrainGraph();
+
                         txtLog.AppendText("학습이 완료되었습니다." + Environment.NewLine);
                         lblStatus.Text = "상태: 학습 완료";
                         lblStatus.ForeColor = Color.DodgerBlue;
