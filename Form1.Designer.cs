@@ -79,6 +79,7 @@ partial class Form1
         // 
         // tabcMain
         // 
+        tabcMain.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         tabcMain.Controls.Add(tabPage1);
         tabcMain.Controls.Add(tabp_Serve);
         tabcMain.Location = new Point(-6, 0);
@@ -128,7 +129,7 @@ partial class Form1
         tabPage1.Padding = new Padding(3, 2, 3, 2);
         tabPage1.Size = new Size(1509, 793);
         tabPage1.TabIndex = 0;
-        tabPage1.Text = "tabPage1";
+        tabPage1.Text = "메인";
         tabPage1.UseVisualStyleBackColor = true;
         tabPage1.Click += tabPage1_Click;
         // 
@@ -465,7 +466,7 @@ partial class Form1
         tabp_Serve.Padding = new Padding(3, 2, 3, 2);
         tabp_Serve.Size = new Size(1509, 793);
         tabp_Serve.TabIndex = 1;
-        tabp_Serve.Text = "tabPage2";
+        tabp_Serve.Text = "학습";
         tabp_Serve.Click += tabp_Serve_Click;
         // 
         // btnStopTrain
