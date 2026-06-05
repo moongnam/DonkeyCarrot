@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Text.RegularExpressions;
 
+
 namespace DonkeyCarrot;
 
 public partial class Form1 : Form
@@ -49,11 +50,18 @@ public partial class Form1 : Form
     List<float> trainLossList = new List<float>();
     List<float> valLossList = new List<float>();
 
+    private List<DonkeyData> deletedList = new List<DonkeyData>();
+
+    private string deletedCatalogPath;
+    private string deletedImagesPath;
+
     public Form1()
     {
         InitializeComponent();
 
         list_FileCheck.SelectionMode = SelectionMode.MultiExtended;
+
+        btn_Restore.Click += btn_Restore_Click;
 
         // 기존 버튼 클릭 이벤트 연결
         btnLoadImages.Click += btnLoadImages_Click;
@@ -221,6 +229,190 @@ public partial class Form1 : Form
         btn_Del.Click += btn_Del_Click;
     }
 
+    private void btn_Restore_Click(object sender, EventArgs e)
+    {
+        if (deletedList == null || deletedList.Count == 0)
+        {
+            MessageBox.Show("복구할 파일이 없습니다.", "알림");
+            return;
+        }
+
+        var selectedIndices = list_DeletedCheck.SelectedIndices.Cast<int>().ToList();
+
+        if (selectedIndices.Count == 0)
+        {
+            MessageBox.Show("복구할 파일을 선택해주세요.", "알림");
+            return;
+        }
+
+        DialogResult result = MessageBox.Show(
+            $"선택하신 {selectedIndices.Count}개의 파일을 복구하시겠습니까?",
+            "파일 복구 확인",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question
+        );
+
+        if (result != DialogResult.Yes)
+            return;
+
+        selectedIndices.Sort();
+        selectedIndices.Reverse();
+
+        int restoreCount = 0;
+
+        foreach (int idx in selectedIndices)
+        {
+            if (idx < 0 || idx >= deletedList.Count)
+                continue;
+
+            DonkeyData restoreData = deletedList[idx];
+            string imageName = Path.GetFileName(restoreData.ImagePath);
+
+            string deletedImagePath = Path.Combine(deletedImagesPath, imageName);
+
+            string imagesFolderPath = Path.Combine(tubPath, "images");
+            string restoreImagePath = Path.Combine(imagesFolderPath, imageName);
+
+            try
+            {
+                if (!Directory.Exists(imagesFolderPath))
+                {
+                    Directory.CreateDirectory(imagesFolderPath);
+                }
+
+                if (File.Exists(deletedImagePath))
+                {
+                    if (File.Exists(restoreImagePath))
+                    {
+                        File.Delete(restoreImagePath);
+                    }
+
+                    File.Move(deletedImagePath, restoreImagePath);
+                }
+
+                dataList.Add(restoreData);
+                imageList.Add(restoreImagePath);
+
+                deletedList.RemoveAt(idx);
+                list_DeletedCheck.Items.RemoveAt(idx);
+
+                restoreCount++;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"파일 복구 실패 ({imageName}): {ex.Message}");
+            }
+        }
+
+        try
+        {
+            RewriteCatalog();
+            RewriteDeletedCatalog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"복구 후 카탈로그 저장 중 오류가 발생했습니다:\n{ex.Message}",
+                "오류",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
+        }
+
+        UpdateFileList();
+
+        currentIndex = dataList.Count > 0 ? dataList.Count - 1 : 0;
+
+        DisplayCurrentData();
+        DrawGraph();
+
+        MessageBox.Show($"{restoreCount}개의 파일이 복구되었습니다.", "복구 완료");
+    }
+
+    
+
+    private void InitializeTrash()
+    {
+        deletedCatalogPath = Path.Combine(tubPath, "deleted_catalog.catalog");
+        deletedImagesPath = Path.Combine(tubPath, "deleted_images");
+
+        if (!Directory.Exists(deletedImagesPath))
+        {
+            Directory.CreateDirectory(deletedImagesPath);
+        }
+
+        LoadDeletedCatalog();
+    }
+
+    private void LoadDeletedCatalog()
+    {
+        deletedList.Clear();
+        list_DeletedCheck.Items.Clear();
+
+        if (!File.Exists(deletedCatalogPath))
+            return;
+
+        string[] lines = File.ReadAllLines(deletedCatalogPath);
+
+        foreach (string line in lines)
+        {
+            try
+            {
+                DonkeyData data =
+                    JsonConvert.DeserializeObject<DonkeyData>(line);
+
+                if (data != null)
+                {
+                    deletedList.Add(data);
+
+                    list_DeletedCheck.Items.Add(
+                        Path.GetFileName(data.ImagePath)
+                    );
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+    //휴지통 목록을 실제 파일에 저장
+    private void RewriteDeletedCatalog()
+    {
+        if (string.IsNullOrEmpty(deletedCatalogPath))
+            return;
+
+        using (StreamWriter sw = new StreamWriter(deletedCatalogPath, false, System.Text.Encoding.UTF8))
+        {
+            foreach (var data in deletedList)
+            {
+                string jsonLine = JsonConvert.SerializeObject(data);
+                sw.WriteLine(jsonLine);
+            }
+        }
+    }
+
+    //현재 살아있는 데이터만 다시 저장
+    private void RewriteCatalog()
+    {
+        if (string.IsNullOrEmpty(tubPath) || !Directory.Exists(tubPath))
+            return;
+
+        string[] catalogFiles = Directory.GetFiles(tubPath, "*.catalog", SearchOption.TopDirectoryOnly);
+
+        if (catalogFiles.Length == 0)
+            return;
+
+        string targetCatalogPath = catalogFiles[0];
+
+        using (StreamWriter sw = new StreamWriter(targetCatalogPath, false, System.Text.Encoding.UTF8))
+        {
+            foreach (var data in dataList)
+            {
+                string jsonLine = JsonConvert.SerializeObject(data);
+                sw.WriteLine(jsonLine);
+            }
+        }
+    }
 
     // 카탈로그 파일 로드가 성공한 직후 호출하여 왼쪽 리스트박스를 가득 채우는 함수
     private void UpdateFileList()
@@ -390,8 +582,8 @@ public partial class Form1 : Form
         }
 
         DialogResult result = MessageBox.Show(
-            $"선택하신 {selectedIndices.Count}개의 파일을 하드디스크와 카탈로그에서 완전히 '일괄 삭제'하시겠습니까?",
-            "다중 파일 영구 삭제 경고",
+            $"선택하신 {selectedIndices.Count}개의 파일을 하드디스크와 카탈로그에서 '일괄 삭제'하시겠습니까?",
+            "다중 파일 삭제 경고",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning
         );
@@ -418,66 +610,61 @@ public partial class Form1 : Form
             DonkeyData targetData = currentSource[idx];
             string imageName = Path.GetFileName(targetData.ImagePath);
 
-            // 2. 물리 이미지 파일 삭제
-            string actualImagePath = imageList.Find(path => path.Contains(imageName));
+            // 2. 물리 이미지 파일을 삭제하지 않고 deleted_images 폴더로 이동
+            string actualImagePath = imageList.Find(path => Path.GetFileName(path) == imageName);
+
             try
             {
                 if (!string.IsNullOrEmpty(actualImagePath) && File.Exists(actualImagePath))
                 {
-                    File.Delete(actualImagePath);
+                    string deletedImagePath = Path.Combine(deletedImagesPath, imageName);
+
+                    // deleted_images 안에 같은 이름 파일이 있으면 덮어쓰기 방지용으로 삭제
+                    if (File.Exists(deletedImagePath))
+                    {
+                        File.Delete(deletedImagePath);
+                    }
+
+                    File.Move(actualImagePath, deletedImagePath);
+
                     imageList.Remove(actualImagePath);
                 }
             }
             catch (Exception ex)
             {
-                // 특정 파일 처리 중 프로세스 락 등이 걸리면 로그만 남기고 다음 파일로 넘어감
-                Debug.WriteLine($"파일 삭제 실패 ({imageName}): {ex.Message}");
+                Debug.WriteLine($"파일 휴지통 이동 실패 ({imageName}): {ex.Message}");
             }
+
+            // 복구용 휴지통 리스트에 추가
+            deletedList.Add(targetData);
+            list_DeletedCheck.Items.Add(imageName);
 
             // 3. 메모리 데이터 리스트에서 삭제 진행 (양쪽 동시 동기화)
             if (filteredList.Count > 0)
             {
                 filteredList.Remove(targetData);
             }
-            dataList.Remove(targetData); // 원본 소스에서도 완전히 파괴
+            dataList.Remove(targetData); // 원본 목록에서는 제거
 
             // 4. UI 리스트박스 항목 제거
             list_FileCheck.Items.RemoveAt(idx);
             deleteCount++;
         }
 
-        // 5. ✨ 실제 하드디스크의 .catalog 텍스트 파일 내용 일괄 동기화 업데이트
+        // 5. 카탈로그 파일 저장
         try
         {
-            if (!string.IsNullOrEmpty(tubPath) && Directory.Exists(tubPath))
-            {
-                string[] catalogFiles = Directory.GetFiles(tubPath, "*.catalog", SearchOption.TopDirectoryOnly);
-
-                if (catalogFiles.Length > 0)
-                {
-                    string targetCatalogPath = catalogFiles[0];
-
-                    // 혼선을 줄이기 위해 서브 카탈로그 파일들은 정리
-                    for (int i = 1; i < catalogFiles.Length; i++)
-                    {
-                        if (File.Exists(catalogFiles[i])) File.Delete(catalogFiles[i]);
-                    }
-
-                    // 남은 데이터를 청소된 클린 상태로 카탈로그에 다시 밀어 넣기
-                    using (StreamWriter sw = new StreamWriter(targetCatalogPath, false, System.Text.Encoding.UTF8))
-                    {
-                        foreach (var data in dataList)
-                        {
-                            string jsonLine = JsonConvert.SerializeObject(data);
-                            sw.WriteLine(jsonLine);
-                        }
-                    }
-                }
-            }
+            RewriteCatalog();          // 현재 살아있는 데이터 저장
+            RewriteDeletedCatalog();   // 휴지통 데이터 저장
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"카탈로그 동기화 중 오류가 발생했습니다:\n{ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(
+                $"카탈로그 동기화 중 오류가 발생했습니다:\n{ex.Message}",
+                "오류",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
         }
 
         MessageBox.Show($"총 {deleteCount}개의 이미지 파일과 카탈로그 로그가 일괄 삭제 및 동기화되었습니다.", "완료");
@@ -516,6 +703,9 @@ public partial class Form1 : Form
 
             string dataFolderPath = fbd.SelectedPath;
             tubPath = dataFolderPath;
+
+            // 휴지통 준비
+            InitializeTrash();
 
             DirectoryInfo currentDir = new DirectoryInfo(dataFolderPath);
 
