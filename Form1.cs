@@ -167,6 +167,9 @@ public partial class Form1 : Form
 
             // PictureBox 크기에 맞게 자동 확대/축소
             pic_DkScreen.SizeMode = PictureBoxSizeMode.Zoom;
+
+            // 현재 데이터의 조향각(Angle) 값을 기반으로 방향선 그리기
+            DrawDirectionLine(currentData.Angle);
         }
         else
         {
@@ -1350,7 +1353,36 @@ public partial class Form1 : Form
     {
 
     }
-}
+
+    // 이미지 뷰어에 조향각 방향선 그리는 함수
+    private void DrawDirectionLine(float angle)
+    {
+        if (pic_DkScreen.Image == null)
+            return;
+
+        Bitmap bmp = new Bitmap(pic_DkScreen.Image);
+
+        using (Graphics g = Graphics.FromImage(bmp))
+        using (Pen pen = new Pen(Color.Lime, 7))
+        using (Brush brush = new SolidBrush(Color.Lime))
+        {
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            int startX = bmp.Width / 2;
+            int startY = bmp.Height - 45;
+
+            int endX = startX + (int)(angle * 300);
+            int endY = startY - 170;
+
+            g.DrawLine(pen, startX, startY, endX, endY);
+
+            // 방향 끝점 표시
+            g.FillEllipse(brush, endX - 10, endY - 10, 20, 20);
+        }
+
+        pic_DkScreen.Image.Dispose();
+        pic_DkScreen.Image = bmp;
+    }}
 
 // catalog JSON 데이터 클래스
 public class DonkeyData
