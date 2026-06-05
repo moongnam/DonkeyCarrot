@@ -55,6 +55,12 @@ public partial class Form1 : Form
     private string deletedCatalogPath;
     private string deletedImagesPath;
 
+    string pilotModelPath = "";
+
+    Process pilotProcess = null;
+    StreamWriter pilotInput = null;
+    StreamReader pilotOutput = null;
+
     public Form1()
     {
         InitializeComponent();
@@ -102,7 +108,8 @@ public partial class Form1 : Form
 
         cmbSpeed.SelectedIndexChanged += cmbSpeed_SelectedIndexChanged;// 속도 조절 콤보박스 이벤트 핸들러 연결
 
-
+        // 파일 불러오기 버튼 이벤트 연결
+        btnLoadPilot.Click += btnLoadPilot_Click;
     }
 
 
@@ -168,8 +175,8 @@ public partial class Form1 : Form
             // PictureBox 크기에 맞게 자동 확대/축소
             pic_DkScreen.SizeMode = PictureBoxSizeMode.Zoom;
 
-            // 현재 데이터의 조향각(Angle) 값을 기반으로 방향선 그리기
-            DrawDirectionLine(currentData.Angle);
+            // 이미지 위에 조향각 선 그리기
+            DrawDirectionLine(currentData.Angle, actualImagePath);
         }
         else
         {
@@ -332,7 +339,7 @@ public partial class Form1 : Form
         MessageBox.Show($"{restoreCount}개의 파일이 복구되었습니다.", "복구 완료");
     }
 
-    
+
 
     private void InitializeTrash()
     {
@@ -1037,14 +1044,12 @@ public partial class Form1 : Form
 
         psi.FileName = @"C:\Windows\System32\wsl.exe";
 
-        string condaEnv = txtCondaEnv.Text;
+        string condaEnv = GetPilotCondaEnv();
 
-        if (string.IsNullOrWhiteSpace(condaEnv) || condaEnv == "conda 환경 이름 입력")
+        if (string.IsNullOrWhiteSpace(condaEnv))
         {
             lblStatus.Text = "상태: 대기 중";
             lblStatus.ForeColor = Color.White;
-
-            MessageBox.Show("Conda 환경 이름을 입력하세요.");
             return;
         }
 
@@ -1355,7 +1360,7 @@ public partial class Form1 : Form
     }
 
     // 이미지 뷰어에 조향각 방향선 그리는 함수
-    private void DrawDirectionLine(float angle)
+    private void DrawDirectionLine(float realAngle, string imagePath)
     {
         if (pic_DkScreen.Image == null)
             return;
@@ -1363,26 +1368,256 @@ public partial class Form1 : Form
         Bitmap bmp = new Bitmap(pic_DkScreen.Image);
 
         using (Graphics g = Graphics.FromImage(bmp))
-        using (Pen pen = new Pen(Color.Lime, 7))
-        using (Brush brush = new SolidBrush(Color.Lime))
         {
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             int startX = bmp.Width / 2;
             int startY = bmp.Height - 45;
 
-            int endX = startX + (int)(angle * 300);
-            int endY = startY - 170;
+            DrawOneDirection(g, startX, startY, realAngle, Color.Lime);
 
-            g.DrawLine(pen, startX, startY, endX, endY);
+            float? predictedAngle = GetPilotPredictionFast(imagePath);
 
-            // 방향 끝점 표시
-            g.FillEllipse(brush, endX - 10, endY - 10, 20, 20);
+            if (predictedAngle.HasValue)
+            {
+                DrawOneDirection(g, startX, startY, predictedAngle.Value, Color.Red);
+            }
         }
 
         pic_DkScreen.Image.Dispose();
         pic_DkScreen.Image = bmp;
-    }}
+    }
+
+    // 한 방향선 그리는 함수 (실제 또는 예측)
+    private void DrawOneDirection(Graphics g, int startX, int startY, float angle, Color color)
+    {
+        using (Pen pen = new Pen(color, 7))
+        using (Brush brush = new SolidBrush(color))
+        {
+            int endX = startX + (int)(angle * 300);
+            int endY = startY - 170;
+
+            g.DrawLine(pen, startX, startY, endX, endY);
+            g.FillEllipse(brush, endX - 10, endY - 10, 20, 20);
+        }
+    }
+
+    // 학습된 모델 불러오기 버튼
+    private void btnLoadPilot_Click(object sender, EventArgs e)
+    {
+        OpenFileDialog ofd = new OpenFileDialog();
+        ofd.Filter = "H5 Model (*.h5)|*.h5";
+
+        if (ofd.ShowDialog() == DialogResult.OK)
+        {
+            pilotModelPath = ofd.FileName;
+
+            StartPilotServer();
+
+            MessageBox.Show("학습 모델 선택 및 예측 서버 시작 완료");
+        }
+    }
+
+    // 예측 파일이 없으면 생성하는 함수
+    private void EnsurePredictServerFile()
+    {
+        if (string.IsNullOrEmpty(projectPath))
+            return;
+
+        string serverPath = Path.Combine(projectPath, "predict_server.py");
+
+        if (File.Exists(serverPath))
+            return;
+
+        string code = @"
+import sys
+import numpy as np
+from PIL import Image
+from tensorflow.keras.models import load_model
+
+model_path = sys.argv[1]
+model = load_model(model_path)
+
+print('READY', flush=True)
+
+while True:
+    line = sys.stdin.readline()
+
+    if not line:
+        break
+
+    image_path = line.strip()
+
+    if image_path == 'EXIT':
+        break
+
+    try:
+        img = Image.open(image_path).convert('RGB')
+        img = img.resize((160, 120))
+        arr = np.array(img).astype(np.float32) / 255.0
+        arr = np.expand_dims(arr, axis=0)
+
+        pred = model.predict(arr, verbose=0)
+
+        if isinstance(pred, list):
+            angle = float(pred[0][0][0])
+            throttle = float(pred[1][0][0])
+        else:
+            angle = float(pred[0][0])
+            throttle = float(pred[0][1])
+
+        print(f'{angle},{throttle}', flush=True)
+
+    except Exception as e:
+        print('ERROR:' + str(e), flush=True)
+";
+
+        File.WriteAllText(serverPath, code);
+    }
+
+    // WSL에서 모델로 예측을 수행하는 함수
+    private float? GetPilotPredictionFast(string imagePath)
+    {
+        if (pilotProcess == null || pilotProcess.HasExited)
+            return null;
+
+        string linuxImagePath = imagePath
+            .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
+            .Replace("\\", "/");
+
+        pilotInput.WriteLine(linuxImagePath);
+        pilotInput.Flush();
+
+        string result = pilotOutput.ReadLine();
+
+        if (string.IsNullOrWhiteSpace(result))
+            return null;
+
+        if (result.StartsWith("ERROR:"))
+        {
+            txtLog.AppendText("예측 오류: " + result + Environment.NewLine);
+            return null;
+        }
+
+        string[] parts = result.Split(',');
+
+        if (parts.Length >= 1 && float.TryParse(parts[0], out float angle))
+            return angle;
+
+        return null;
+    }
+
+    // 예측 서버 시작 함수
+    private void StartPilotServer()
+    {
+        if (string.IsNullOrEmpty(projectPath) || string.IsNullOrEmpty(pilotModelPath))
+            return;
+
+        EnsurePredictServerFile();
+
+        if (pilotProcess != null && !pilotProcess.HasExited)
+        {
+            try
+            {
+                pilotInput.WriteLine("EXIT");
+                pilotProcess.Kill();
+            }
+            catch { }
+        }
+
+        string linuxProjectPath = projectPath
+            .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
+            .Replace("\\", "/");
+
+        string linuxModelPath = pilotModelPath
+            .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
+            .Replace("\\", "/");
+
+        string condaEnv = GetPilotCondaEnv();
+
+        if (string.IsNullOrWhiteSpace(condaEnv))
+            return;
+
+        ProcessStartInfo psi = new ProcessStartInfo();
+        psi.FileName = @"C:\Windows\System32\wsl.exe";
+        psi.Arguments =
+            $"-d Ubuntu-22.04 -- bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate {condaEnv} && python predict_server.py '{linuxModelPath}'\"";
+
+        psi.RedirectStandardInput = true;
+        psi.RedirectStandardOutput = true;
+        psi.RedirectStandardError = true;
+        psi.UseShellExecute = false;
+        psi.CreateNoWindow = true;
+
+        pilotProcess = Process.Start(psi);
+        pilotInput = pilotProcess.StandardInput;
+        pilotOutput = pilotProcess.StandardOutput;
+
+        string ready = pilotOutput.ReadLine();
+
+        if (ready != "READY")
+        {
+            txtLog.AppendText("예측 서버 시작 실패" + Environment.NewLine);
+        }
+    }
+
+    // Conda 환경 이름을 한 곳에서만 입력받도록 하는 함수
+    private string GetPilotCondaEnv()
+    {
+        string env1 = txtCondaEnv.Text.Trim();
+        string env2 = txtCondaEnv2.Text.Trim();
+
+        bool hasEnv1 = !string.IsNullOrWhiteSpace(env1) &&
+                       env1 != "conda 환경 이름 입력";
+
+        bool hasEnv2 = !string.IsNullOrWhiteSpace(env2) &&
+                       env2 != "conda 환경 이름 입력";
+
+        // 둘 다 비어있음
+        if (!hasEnv1 && !hasEnv2)
+        {
+            MessageBox.Show("Conda 환경 이름을 입력하세요.");
+            return "";
+        }
+
+        // 둘 다 입력됨
+        if (hasEnv1 && hasEnv2)
+        {
+            // 값이 다르면 오류
+            if (env1 != env2)
+            {
+                MessageBox.Show(
+                    "Conda 환경 이름이 서로 다릅니다.\n같은 이름을 입력하거나 한 곳만 입력하세요."
+                );
+                return "";
+            }
+
+            // 값이 같으면 사용
+            return env1;
+        }
+
+        // 하나만 입력된 경우
+        return hasEnv1 ? env1 : env2;
+    }
+
+    private void txtCondaEnv2_Enter(object sender, EventArgs e)
+    {
+        if (txtCondaEnv2.Text == "conda 환경 이름 입력")
+        {
+            txtCondaEnv2.Text = "";
+            txtCondaEnv2.ForeColor = Color.Black;
+        }
+    }
+
+    private void txtCondaEnv2_Leave(object sender, EventArgs e)
+    {
+        if(string.IsNullOrWhiteSpace(txtCondaEnv2.Text))
+        {
+            txtCondaEnv2.Text = "conda 환경 이름 입력";
+            txtCondaEnv2.ForeColor = Color.Silver;
+        }
+    }
+}
 
 // catalog JSON 데이터 클래스
 public class DonkeyData

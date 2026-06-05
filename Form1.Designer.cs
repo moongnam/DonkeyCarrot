@@ -30,6 +30,8 @@ partial class Form1
     {
         tabcMain = new TabControl();
         tabPage1 = new TabPage();
+        txtCondaEnv2 = new TextBox();
+        btnLoadPilot = new Button();
         btn_Restore = new Button();
         lbl_To2 = new Label();
         lbl_To = new Label();
@@ -104,6 +106,8 @@ partial class Form1
         // 
         // tabPage1
         // 
+        tabPage1.Controls.Add(txtCondaEnv2);
+        tabPage1.Controls.Add(btnLoadPilot);
         tabPage1.Controls.Add(btn_Restore);
         tabPage1.Controls.Add(lbl_To2);
         tabPage1.Controls.Add(lbl_To);
@@ -147,6 +151,28 @@ partial class Form1
         tabPage1.Text = "메인";
         tabPage1.UseVisualStyleBackColor = true;
         tabPage1.Click += tabPage1_Click;
+        // 
+        // txtCondaEnv2
+        // 
+        txtCondaEnv2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        txtCondaEnv2.ForeColor = Color.Silver;
+        txtCondaEnv2.Location = new Point(897, 43);
+        txtCondaEnv2.Name = "txtCondaEnv2";
+        txtCondaEnv2.Size = new Size(184, 27);
+        txtCondaEnv2.TabIndex = 48;
+        txtCondaEnv2.Text = "conda 환경 이름 입력";
+        txtCondaEnv2.Enter += txtCondaEnv2_Enter;
+        txtCondaEnv2.Leave += txtCondaEnv2_Leave;
+        // 
+        // btnLoadPilot
+        // 
+        btnLoadPilot.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        btnLoadPilot.Location = new Point(762, 34);
+        btnLoadPilot.Name = "btnLoadPilot";
+        btnLoadPilot.Size = new Size(118, 43);
+        btnLoadPilot.TabIndex = 47;
+        btnLoadPilot.Text = "학습 모델 선택";
+        btnLoadPilot.UseVisualStyleBackColor = true;
         // 
         // btn_Restore
         // 
@@ -690,6 +716,7 @@ partial class Form1
         txtCondaEnv.Name = "txtCondaEnv";
         txtCondaEnv.Size = new Size(234, 32);
         txtCondaEnv.TabIndex = 2;
+        txtCondaEnv.Text = "conda 환경 이름 입력";
         txtCondaEnv.Enter += txtCondaEnv_Enter;
         txtCondaEnv.Leave += txtCondaEnv_Leave;
         // 
@@ -799,5 +826,7 @@ partial class Form1
     private TabPage tabPage3;
     private Button btn_Restore;
     private ListBox list_DeletedCheck;
+    private Button btnLoadPilot;
+    private TextBox txtCondaEnv2;
 }
 
