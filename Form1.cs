@@ -81,6 +81,15 @@ public partial class Form1 : Form
         chk_Angle.CheckedChanged += chk_Graph_CheckedChanged;
         chk_Throttle.CheckedChanged += chk_Graph_CheckedChanged;
 
+        //화면 크기 바뀔때마다 그래프 다시 호출
+        pic_Graph.SizeChanged += (s, e) =>
+        {
+            if (pic_Graph.Width > 0 && pic_Graph.Height > 0)
+            {
+                DrawGraph();
+            }
+        };
+
         // pic_Graph 외곽선
         pic_Graph.BorderStyle = BorderStyle.FixedSingle;
 
@@ -950,6 +959,11 @@ public partial class Form1 : Form
             }
 
             g.DrawString("user/throttle", font, Brushes.Blue, graphRight - 90, graphTop - 8);
+        }
+
+        if (pic_Graph.Image != null)
+        {
+            pic_Graph.Image.Dispose();
         }
 
         pic_Graph.Image = bmp;
