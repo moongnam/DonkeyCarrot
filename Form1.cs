@@ -447,17 +447,11 @@ public partial class Form1 : Form
     private void UpdateFileList()
     {
         list_FileCheck.Items.Clear();
-        filteredList.Clear(); // 🔍 원본 파일 리스트를 볼 때는 필터링 리스트 비우기
 
-        foreach (var data in dataList)
+        for (int i = 0; i < dataList.Count; i++)
         {
-            list_FileCheck.Items.Add(Path.GetFileName(data.ImagePath));
-        }
-
-        if (dataList.Count > 0)
-        {
-            currentIndex = 0;
-            DisplayCurrentData();
+            string fileName = Path.GetFileName(dataList[i].ImagePath);
+            list_FileCheck.Items.Add($"{i + 1:D4}. {fileName}");
         }
     }
 
@@ -532,9 +526,11 @@ public partial class Form1 : Form
 
             // 왼쪽 UI 파일 목록 리스트박스 갱신
             list_FileCheck.Items.Clear();
-            foreach (var d in filteredList)
+
+            for (int i = 0; i < filteredList.Count; i++)
             {
-                list_FileCheck.Items.Add(Path.GetFileName(d.ImagePath));
+                string fileName = Path.GetFileName(filteredList[i].ImagePath);
+                list_FileCheck.Items.Add($"{i + 1:D4}. {fileName}");
             }
 
             currentIndex = 0;       // 인덱스를 필터링된 데이터의 첫 번째 항목으로 설정
@@ -729,6 +725,8 @@ public partial class Form1 : Form
                 currentIndex = checkSource.Count - 1;
             }
         }
+        // 파일 리스트 업데이트
+        UpdateFileList();
 
         DisplayCurrentData();
         DrawGraph(); // 변동된 상태로 그래프 최신화
