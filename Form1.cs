@@ -18,6 +18,7 @@ public partial class Form1 : Form
     float previousTrainLoss = -1;
     float previousValLoss = -1;
     bool isUpdatingUI = false;
+    int? spaceStartIndex = null;
 
     // catalog 데이터를 저장할 리스트 (전체 원본 데이터)
     List<DonkeyData> dataList = new List<DonkeyData>();
@@ -70,6 +71,9 @@ public partial class Form1 : Form
         list_DeletedCheck.SelectionMode = SelectionMode.MultiExtended;
 
         btn_Restore.Click += btn_Restore_Click;
+
+        this.KeyPreview = true;
+        this.KeyDown += Form1_KeyDown;
 
         // 기존 버튼 클릭 이벤트 연결
         btnLoadImages.Click += btnLoadImages_Click;
@@ -208,6 +212,59 @@ public partial class Form1 : Form
             pic_DkScreen.Image = null;
         }
         isUpdatingUI = false;
+    }
+    private void Form1_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Space)
+            return;
+
+        e.SuppressKeyPress = true;
+
+        var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+
+        if (currentSource == null || currentSource.Count == 0)
+            return;
+
+        // 스페이스바 처음 누른 경우: 시작점 저장
+        if (spaceStartIndex == null)
+        {
+            spaceStartIndex = currentIndex;
+
+            list_FileCheck.ClearSelected();
+            list_FileCheck.SelectedIndex = currentIndex;
+
+            return;
+        }
+
+        // 스페이스바 두 번째 누른 경우: 시작점 ~ 현재 위치까지 선택
+        int start = spaceStartIndex.Value;
+        int end = currentIndex;
+
+        if (start > end)
+        {
+            int temp = start;
+            start = end;
+            end = temp;
+        }
+
+        // 자동재생 멈추기
+        autoTimer.Stop();
+        isAutoPlaying = false;
+
+        list_FileCheck.ClearSelected();
+
+        for (int i = start; i <= end; i++)
+        {
+            if (i >= 0 && i < list_FileCheck.Items.Count)
+            {
+                list_FileCheck.SetSelected(i, true);
+            }
+        }
+
+        list_FileCheck.TopIndex = start;
+
+        // 다시 다음 범위 선택할 수 있게 초기화
+        spaceStartIndex = null;
     }
 
 
