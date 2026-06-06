@@ -66,6 +66,7 @@ public partial class Form1 : Form
         InitializeComponent();
 
         list_FileCheck.SelectionMode = SelectionMode.MultiExtended;
+        list_DeletedCheck.SelectionMode = SelectionMode.MultiExtended;
 
         btn_Restore.Click += btn_Restore_Click;
 
@@ -313,6 +314,15 @@ public partial class Form1 : Form
                 Debug.WriteLine($"파일 복구 실패 ({imageName}): {ex.Message}");
             }
         }
+
+        dataList = dataList
+            .OrderBy(d =>
+            {
+                string fileName = Path.GetFileName(d.ImagePath);
+                string number = fileName.Split('_')[0];
+                return int.Parse(number);
+            })
+            .ToList();
 
         try
         {
@@ -659,6 +669,23 @@ public partial class Form1 : Form
             // 4. UI 리스트박스 항목 제거
             list_FileCheck.Items.RemoveAt(idx);
             deleteCount++;
+        }
+        deletedList = deletedList
+            .OrderBy(d =>
+            {
+                string fileName = Path.GetFileName(d.ImagePath);
+                string number = fileName.Split('_')[0];
+                return int.Parse(number);
+            })
+            .ToList();
+
+        list_DeletedCheck.Items.Clear();
+
+        foreach (var data in deletedList)
+        {
+            list_DeletedCheck.Items.Add(
+                Path.GetFileName(data.ImagePath)
+            );
         }
 
         // 5. 카탈로그 파일 저장
