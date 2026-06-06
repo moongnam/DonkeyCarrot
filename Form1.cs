@@ -17,6 +17,7 @@ public partial class Form1 : Form
     int epochCount = 0;
     float previousTrainLoss = -1;
     float previousValLoss = -1;
+    bool isUpdatingUI = false;
 
     // catalog 데이터를 저장할 리스트 (전체 원본 데이터)
     List<DonkeyData> dataList = new List<DonkeyData>();
@@ -125,6 +126,7 @@ public partial class Form1 : Form
 
     private void DisplayCurrentData()
     {
+        isUpdatingUI = true;
         // 🔍 현재 활성화된 리스트(필터링 상태 반영) 기준으로 데이터 체크
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
@@ -153,12 +155,21 @@ public partial class Form1 : Form
         // 4. 왼쪽 리스트 선택 상태 동기화
         // ⚠️ 여러 개 드래그 선택 중일 때는 SelectedIndex를 강제로 변경하지 않음
         // 안 그러면 다중 선택이 풀려버림
-        if (list_FileCheck.Items.Count > currentIndex)
+        if (list_FileCheck.Items.Count > currentIndex && currentIndex >= 0)
         {
-            // 선택된 항목이 0개 또는 1개일 때만 현재 인덱스 동기화
-            if (list_FileCheck.SelectedIndices.Count <= 1)
+            if (isAutoPlaying)
             {
+                list_FileCheck.ClearSelected();
                 list_FileCheck.SelectedIndex = currentIndex;
+                list_FileCheck.TopIndex = currentIndex;
+            }
+            else
+            {
+                if (list_FileCheck.SelectedIndices.Count <= 1)
+                {
+                    list_FileCheck.ClearSelected();
+                    list_FileCheck.SelectedIndex = currentIndex;
+                }
             }
         }
 
@@ -196,6 +207,7 @@ public partial class Form1 : Form
 
             pic_DkScreen.Image = null;
         }
+        isUpdatingUI = false;
     }
 
 
@@ -217,6 +229,8 @@ public partial class Form1 : Form
         // myTrackbar1 : 커스텀 재생바 드래그 시 인덱스 변경 연동
         myTrackbar1.ValueChanged += (s, e) =>
         {
+            if (isUpdatingUI) return;
+
             currentIndex = myTrackbar1.Value;
             DisplayCurrentData();
         };
@@ -595,7 +609,11 @@ public partial class Form1 : Form
     {
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
-        if (currentSource == null || currentSource.Count == 0) return;
+        if (currentSource == null || currentSource.Count == 0)
+        {
+            isUpdatingUI = false;
+            return;
+        }
 
         // 🔍 현재 ListBox에서 선택된 항목들의 인덱스 모음 가져오기
         var selectedIndices = list_FileCheck.SelectedIndices.Cast<int>().ToList();
