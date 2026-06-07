@@ -1745,42 +1745,7 @@ while True:
         btn_Retry.Click += btn_Retry_Click;
         btn_Del.Click += btn_Del_Click;
 
-        int lastHoveredIndex = -1; // 이전 마우스 위치를 기억해서 툴팁이 번쩍거리는 현상 방지
-
-        list_FileCheck.MouseMove += (s, e) =>
-        {
-            // 1. 마우스 위치에 있는 항목의 인덱스(줄 번호)를 계산합니다.
-            int index = list_FileCheck.IndexFromPoint(e.Location);
-
-            // 2. 올바른 인덱스 위에 마우스가 올라가 있고, 이전 항목과 다를 때만 갱신
-            if (index >= 0 && index < list_FileCheck.Items.Count)
-            {
-                if (index != lastHoveredIndex)
-                {
-                    lastHoveredIndex = index;
-
-                    // 현재 마우스가 가리키는 데이터 가져오기
-                    var currentSource = filteredList.Count > 0 ? filteredList : dataList;
-                    if (index < currentSource.Count)
-                    {
-                        // 💡 [여기 수정!] 카탈로그에 기록된 파일명만 가져옵니다.
-                        string imageName = Path.GetFileName(currentSource[index].ImagePath);
-
-                        // 💡 [진짜 절대 경로 생성] tubPath + "images" + 파일명을 합쳐서 진짜 컴퓨터 상의 경로를 만듭니다.
-                        string realFullPath = Path.Combine(tubPath, "images", imageName);
-
-                        // 마우스 포인터 옆에 툴팁으로 '진짜 절대 경로' 표시
-                        toolTip1.SetToolTip(list_FileCheck, realFullPath);
-                    }
-                }
-            }
-            else
-            {
-                // 마우스가 빈 공간으로 가버리면 툴팁 지우기
-                toolTip1.SetToolTip(list_FileCheck, "");
-                lastHoveredIndex = -1;
-            }
-        };
+   
     }
 }
 
