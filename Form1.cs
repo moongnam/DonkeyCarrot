@@ -75,6 +75,8 @@ public partial class Form1 : Form
         this.KeyPreview = true;
         this.KeyDown += Form1_KeyDown;
 
+        list_FileCheck.KeyDown += Form1_KeyDown;
+
         // 기존 버튼 클릭 이벤트 연결
         btnLoadImages.Click += btnLoadImages_Click;
 
@@ -215,6 +217,19 @@ public partial class Form1 : Form
     }
     private void Form1_KeyDown(object sender, KeyEventArgs e)
     {
+        // 1. [Delete] 키가 눌렸을 때 기능 추가 ---------------------------------------
+        if (e.KeyCode == Keys.Delete)
+        {
+            e.SuppressKeyPress = true; // 윈도우 기본 띵~ 소리 방지
+
+            // 이미 구현해 두신 삭제 로직 실행!
+            // 버튼 클릭 이벤트를 코드로 직접 호출합니다.
+            btn_Del_Click(btn_Del, EventArgs.Empty);
+            return;
+        }
+        // -------------------------------------------------------------------------
+
+        // 2. 기존 스페이스바 로직 (그대로 유지)
         if (e.KeyCode != Keys.Space)
             return;
 
@@ -265,59 +280,6 @@ public partial class Form1 : Form
 
         // 다시 다음 범위 선택할 수 있게 초기화
         spaceStartIndex = null;
-    }
-
-
-    private void InitializeManagerEvents()
-    {
-        // > 버튼 : 다음 프레임 데이터로 1건 이동
-        btn_BigR.Click += (s, e) =>
-        {
-            var currentSource = filteredList.Count > 0 ? filteredList : dataList;
-            if (currentIndex < currentSource.Count - 1) { currentIndex++; DisplayCurrentData(); }
-        };
-
-        // < 버튼 : 이전 프레임 데이터로 1건 이동
-        btn_BigL.Click += (s, e) =>
-        {
-            if (currentIndex > 0) { currentIndex--; DisplayCurrentData(); }
-        };
-
-        // myTrackbar1 : 커스텀 재생바 드래그 시 인덱스 변경 연동
-        myTrackbar1.ValueChanged += (s, e) =>
-        {
-            if (isUpdatingUI) return;
-
-            currentIndex = myTrackbar1.Value;
-            DisplayCurrentData();
-        };
-
-        // 리스트 선택 이벤트
-        list_FileCheck.SelectedIndexChanged += (s, e) =>
-        {
-            // 자동재생 중에는 수동 선택 막기
-            if (isAutoPlaying) return;
-
-            // ⚠️ 여러 개 선택 중일 때는
-            // 현재 이미지 이동 및 자동 동기화 중단
-            // 안 그러면 드래그 선택할 때 화면이 계속 바뀜
-            if (list_FileCheck.SelectedIndices.Count != 1)
-                return;
-
-            // 정상적으로 1개만 선택된 경우
-            if (list_FileCheck.SelectedIndex != -1 &&
-                list_FileCheck.SelectedIndex != currentIndex)
-            {
-                currentIndex = list_FileCheck.SelectedIndex;
-
-                // 현재 선택된 이미지 표시
-                DisplayCurrentData();
-            }
-        };
-        // 찾기, 초기화, 삭제 버튼 이벤트 바인딩
-        btn_Find.Click += btn_Find_Click;
-        btn_Retry.Click += btn_Retry_Click;
-        btn_Del.Click += btn_Del_Click;
     }
 
     private void btn_Restore_Click(object sender, EventArgs e)
@@ -1725,13 +1687,66 @@ while True:
 
     private void txtCondaEnv2_Leave(object sender, EventArgs e)
     {
-        if(string.IsNullOrWhiteSpace(txtCondaEnv2.Text))
+        if (string.IsNullOrWhiteSpace(txtCondaEnv2.Text))
         {
             txtCondaEnv2.Text = "conda 환경 이름 입력";
             txtCondaEnv2.ForeColor = Color.Silver;
         }
     }
+
+
+private void InitializeManagerEvents()
+    {
+        // > 버튼 : 다음 프레임 데이터로 1건 이동
+        btn_BigR.Click += (s, e) =>
+        {
+            var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+            if (currentIndex < currentSource.Count - 1) { currentIndex++; DisplayCurrentData(); }
+        };
+
+        // < 버튼 : 이전 프레임 데이터로 1건 이동
+        btn_BigL.Click += (s, e) =>
+        {
+            if (currentIndex > 0) { currentIndex--; DisplayCurrentData(); }
+        };
+
+        // myTrackbar1 : 커스텀 재생바 드래그 시 인덱스 변경 연동
+        myTrackbar1.ValueChanged += (s, e) =>
+        {
+            if (isUpdatingUI) return;
+
+            currentIndex = myTrackbar1.Value;
+            DisplayCurrentData();
+        };
+
+        // 리스트 선택 이벤트
+        list_FileCheck.SelectedIndexChanged += (s, e) =>
+        {
+            // 자동재생 중에는 수동 선택 막기
+            if (isAutoPlaying) return;
+
+            // ⚠️ 여러 개 선택 중일 때는 현재 이미지 이동 및 자동 동기화 중단
+            if (list_FileCheck.SelectedIndices.Count != 1)
+                return;
+
+            // 정상적으로 1개만 선택된 경우
+            if (list_FileCheck.SelectedIndex != -1 &&
+                list_FileCheck.SelectedIndex != currentIndex)
+            {
+                currentIndex = list_FileCheck.SelectedIndex;
+
+                // 현재 선택된 이미지 표시
+                DisplayCurrentData();
+            }
+        };
+
+        // 찾기, 초기화, 삭제 버튼 이벤트 바인딩
+        btn_Find.Click += btn_Find_Click;
+        btn_Retry.Click += btn_Retry_Click;
+        btn_Del.Click += btn_Del_Click;
+    }
 }
+
 
 // catalog JSON 데이터 클래스
 public class DonkeyData
