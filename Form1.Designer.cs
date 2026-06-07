@@ -31,6 +31,8 @@ partial class Form1
         components = new System.ComponentModel.Container();
         tabcMain = new TabControl();
         tabPage1 = new TabPage();
+        lbl_ImageRoute = new Label();
+        lbl_CatalogRoute = new Label();
         txtCondaEnv2 = new TextBox();
         btnLoadPilot = new Button();
         btn_Restore = new Button();
@@ -83,6 +85,7 @@ partial class Form1
         txtLog = new TextBox();
         btnTrain = new Button();
         toolTip1 = new ToolTip(components);
+        toolTipPath = new ToolTip(components);
         tabcMain.SuspendLayout();
         tabPage1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pic_Graph).BeginInit();
@@ -108,6 +111,8 @@ partial class Form1
         // 
         // tabPage1
         // 
+        tabPage1.Controls.Add(lbl_ImageRoute);
+        tabPage1.Controls.Add(lbl_CatalogRoute);
         tabPage1.Controls.Add(txtCondaEnv2);
         tabPage1.Controls.Add(btnLoadPilot);
         tabPage1.Controls.Add(btn_Restore);
@@ -153,6 +158,26 @@ partial class Form1
         tabPage1.Text = "메인";
         tabPage1.UseVisualStyleBackColor = true;
         tabPage1.Click += tabPage1_Click;
+        // 
+        // lbl_ImageRoute
+        // 
+        lbl_ImageRoute.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        lbl_ImageRoute.AutoSize = true;
+        lbl_ImageRoute.Location = new Point(1446, 15);
+        lbl_ImageRoute.Name = "lbl_ImageRoute";
+        lbl_ImageRoute.Size = new Size(108, 25);
+        lbl_ImageRoute.TabIndex = 50;
+        lbl_ImageRoute.Text = "이미지 경로";
+        // 
+        // lbl_CatalogRoute
+        // 
+        lbl_CatalogRoute.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        lbl_CatalogRoute.AutoSize = true;
+        lbl_CatalogRoute.Location = new Point(1236, 15);
+        lbl_CatalogRoute.Name = "lbl_CatalogRoute";
+        lbl_CatalogRoute.Size = new Size(126, 25);
+        lbl_CatalogRoute.TabIndex = 49;
+        lbl_CatalogRoute.Text = "카탈로그 경로";
         // 
         // txtCondaEnv2
         // 
@@ -833,5 +858,8 @@ partial class Form1
     private Button btnLoadPilot;
     private TextBox txtCondaEnv2;
     private ToolTip toolTip1;
+    private Label lbl_CatalogRoute;
+    private Label lbl_ImageRoute;
+    private ToolTip toolTipPath;
 }
 

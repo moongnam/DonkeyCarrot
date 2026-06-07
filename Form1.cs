@@ -783,6 +783,10 @@ public partial class Form1 : Form
             filteredList.Clear(); // 초기화
 
             string dataFolderPath = fbd.SelectedPath;
+
+            lbl_CatalogRoute.Text = Path.GetFileName(dataFolderPath);
+            toolTipPath.SetToolTip(lbl_CatalogRoute, dataFolderPath);
+
             tubPath = dataFolderPath;
 
             // 휴지통 준비
@@ -1081,6 +1085,9 @@ public partial class Form1 : Form
         if (fbd.ShowDialog() == DialogResult.OK)
         {
             imageList.Clear();
+
+            lbl_ImageRoute.Text = Path.GetFileName(fbd.SelectedPath);
+            toolTipPath.SetToolTip(lbl_ImageRoute, fbd.SelectedPath);
 
             string[] jpgFiles = Directory.GetFiles(fbd.SelectedPath, "*.jpg");
             string[] pngFiles = Directory.GetFiles(fbd.SelectedPath, "*.png");
