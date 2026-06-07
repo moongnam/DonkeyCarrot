@@ -28,6 +28,7 @@ partial class Form1
     /// </summary>
     private void InitializeComponent()
     {
+        components = new System.ComponentModel.Container();
         tabcMain = new TabControl();
         tabPage1 = new TabPage();
         txtCondaEnv2 = new TextBox();
@@ -81,6 +82,7 @@ partial class Form1
         txtCondaEnv = new TextBox();
         txtLog = new TextBox();
         btnTrain = new Button();
+        toolTip1 = new ToolTip(components);
         tabcMain.SuspendLayout();
         tabPage1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pic_Graph).BeginInit();
@@ -758,7 +760,7 @@ partial class Form1
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1736, 1055);
         Controls.Add(tabcMain);
-        Margin = new Padding(4, 2, 4, 2);
+        Margin = new Padding(6, 3, 6, 3);
         Name = "Form1";
         Text = "DonkeyCarrot 1.0 v";
         tabcMain.ResumeLayout(false);
@@ -830,5 +832,6 @@ partial class Form1
     private ListBox list_DeletedCheck;
     private Button btnLoadPilot;
     private TextBox txtCondaEnv2;
+    private ToolTip toolTip1;
 }
 
