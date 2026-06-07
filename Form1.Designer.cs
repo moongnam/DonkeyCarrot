@@ -31,6 +31,8 @@ partial class Form1
         components = new System.ComponentModel.Container();
         tabcMain = new TabControl();
         tabPage1 = new TabPage();
+        label4 = new Label();
+        label3 = new Label();
         lbl_ImageRoute = new Label();
         lbl_CatalogRoute = new Label();
         txtCondaEnv2 = new TextBox();
@@ -86,8 +88,6 @@ partial class Form1
         btnTrain = new Button();
         toolTip1 = new ToolTip(components);
         toolTipPath = new ToolTip(components);
-        label3 = new Label();
-        label4 = new Label();
         tabcMain.SuspendLayout();
         tabPage1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pic_Graph).BeginInit();
@@ -162,6 +162,26 @@ partial class Form1
         tabPage1.Text = "메인";
         tabPage1.UseVisualStyleBackColor = true;
         tabPage1.Click += tabPage1_Click;
+        // 
+        // label4
+        // 
+        label4.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        label4.AutoSize = true;
+        label4.Location = new Point(413, 57);
+        label4.Name = "label4";
+        label4.Size = new Size(127, 20);
+        label4.TabIndex = 52;
+        label4.Text = "빨간선: 학습 모델";
+        // 
+        // label3
+        // 
+        label3.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        label3.AutoSize = true;
+        label3.Location = new Point(413, 12);
+        label3.Name = "label3";
+        label3.Size = new Size(142, 20);
+        label3.TabIndex = 51;
+        label3.Text = "초록선: 실제 운전자";
         // 
         // lbl_ImageRoute
         // 
@@ -780,24 +800,6 @@ partial class Form1
         btnTrain.Text = "학습 시작";
         btnTrain.UseVisualStyleBackColor = false;
         btnTrain.Click += btnTrain_Click_1;
-        // 
-        // label3
-        // 
-        label3.AutoSize = true;
-        label3.Location = new Point(413, 12);
-        label3.Name = "label3";
-        label3.Size = new Size(142, 20);
-        label3.TabIndex = 51;
-        label3.Text = "초록선: 실제 운전자";
-        // 
-        // label4
-        // 
-        label4.AutoSize = true;
-        label4.Location = new Point(413, 57);
-        label4.Name = "label4";
-        label4.Size = new Size(127, 20);
-        label4.TabIndex = 52;
-        label4.Text = "빨간선: 학습 모델";
         // 
         // Form1
         // 
