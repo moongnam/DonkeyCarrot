@@ -1752,7 +1752,22 @@ while True:
         btn_Retry.Click += btn_Retry_Click;
         btn_Del.Click += btn_Del_Click;
 
-   
+
+    }
+
+    private void chk_Throttle_CheckedChanged(object sender, EventArgs e)
+    {
+
+    }
+
+    private void btn_BigL_Click_1(object sender, EventArgs e)
+    {
+
+    }
+
+    private void lblAngle_Click(object sender, EventArgs e)
+    {
+
     }
 }
 
