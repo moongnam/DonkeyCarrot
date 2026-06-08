@@ -1,6 +1,6 @@
 ## (메인 화면 추가한 기능)
 
-- 사용한 컨트롤:
+- 사용한 컨트롤: Label, Button, CheckBox, TrackBar, ComboBox, ListBox, TabControl, TabPage
 
  - 구현 내용 및 기능 설명
 
