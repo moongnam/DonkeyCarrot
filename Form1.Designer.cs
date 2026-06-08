@@ -73,6 +73,7 @@ partial class Form1
         tabPage2 = new TabPage();
         list_FileCheck = new ListBox();
         tabPage3 = new TabPage();
+        list_DeletedCheck = new ListBox();
         tabp_Serve = new TabPage();
         txtTrainLoss = new TextBox();
         label2 = new Label();
@@ -86,7 +87,6 @@ partial class Form1
         btnTrain = new Button();
         toolTip1 = new ToolTip(components);
         toolTipPath = new ToolTip(components);
-        list_DeletedCheck = new ListBox();
         tabcMain.SuspendLayout();
         tabPage1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pic_Graph).BeginInit();
@@ -105,6 +105,7 @@ partial class Form1
         tabcMain.Controls.Add(tabp_Serve);
         tabcMain.Location = new Point(-5, 0);
         tabcMain.Margin = new Padding(4, 3, 4, 3);
+        tabcMain.Multiline = true;
         tabcMain.Name = "tabcMain";
         tabcMain.SelectedIndex = 0;
         tabcMain.Size = new Size(1563, 877);
@@ -385,7 +386,7 @@ partial class Form1
         myTrackbar1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         myTrackbar1.BackColor = Color.Transparent;
         myTrackbar1.Location = new Point(41, 515);
-        myTrackbar1.Margin = new Padding(5, 5, 5, 5);
+        myTrackbar1.Margin = new Padding(5);
         myTrackbar1.Maximum = 100;
         myTrackbar1.Minimum = 0;
         myTrackbar1.Name = "myTrackbar1";
@@ -641,7 +642,7 @@ partial class Form1
         tabPage2.Controls.Add(list_FileCheck);
         tabPage2.Location = new Point(4, 29);
         tabPage2.Name = "tabPage2";
-        tabPage2.Padding = new Padding(3, 3, 3, 3);
+        tabPage2.Padding = new Padding(3);
         tabPage2.Size = new Size(574, 460);
         tabPage2.TabIndex = 0;
         tabPage2.Text = "파일 목록";
@@ -655,7 +656,7 @@ partial class Form1
         list_FileCheck.Location = new Point(4, 4);
         list_FileCheck.Margin = new Padding(4, 3, 4, 3);
         list_FileCheck.Name = "list_FileCheck";
-        list_FileCheck.Size = new Size(567, 404);
+        list_FileCheck.Size = new Size(567, 444);
         list_FileCheck.TabIndex = 13;
         list_FileCheck.SelectedIndexChanged += list_FileCheck_SelectedIndexChanged;
         // 
@@ -664,11 +665,20 @@ partial class Form1
         tabPage3.Controls.Add(list_DeletedCheck);
         tabPage3.Location = new Point(4, 29);
         tabPage3.Name = "tabPage3";
-        tabPage3.Padding = new Padding(3, 3, 3, 3);
+        tabPage3.Padding = new Padding(3);
         tabPage3.Size = new Size(574, 460);
         tabPage3.TabIndex = 1;
         tabPage3.Text = "복구";
         tabPage3.UseVisualStyleBackColor = true;
+        // 
+        // list_DeletedCheck
+        // 
+        list_DeletedCheck.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+        list_DeletedCheck.FormattingEnabled = true;
+        list_DeletedCheck.Location = new Point(3, 5);
+        list_DeletedCheck.Name = "list_DeletedCheck";
+        list_DeletedCheck.Size = new Size(567, 444);
+        list_DeletedCheck.TabIndex = 14;
         // 
         // tabp_Serve
         // 
@@ -820,15 +830,6 @@ partial class Form1
         btnTrain.UseVisualStyleBackColor = false;
         btnTrain.Click += btnTrain_Click_1;
         // 
-        // list_DeletedCheck
-        // 
-        list_DeletedCheck.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-        list_DeletedCheck.FormattingEnabled = true;
-        list_DeletedCheck.Location = new Point(0, 5);
-        list_DeletedCheck.Name = "list_DeletedCheck";
-        list_DeletedCheck.Size = new Size(568, 424);
-        list_DeletedCheck.TabIndex = 14;
-        // 
         // Form1
         // 
         AutoScaleDimensions = new SizeF(9F, 20F);
@@ -899,7 +900,6 @@ partial class Form1
     private Label label1;
     private Label label2;
     private TextBox txtTrainLoss;
-    private TabControl tab_Trash;
     private TabPage tabPage2;
     private TabPage tabPage3;
     private Button btn_Restore;
@@ -912,5 +912,6 @@ partial class Form1
     private Label label4;
     private Label label3;
     private ListBox list_DeletedCheck;
+    public TabControl tab_Trash;
 }
 
