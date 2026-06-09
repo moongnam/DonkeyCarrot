@@ -77,6 +77,8 @@ public partial class Form1 : Form
 
         list_FileCheck.KeyDown += Form1_KeyDown;
 
+        list_DeletedCheck.KeyDown += Form1_KeyDown;
+
         // 기존 버튼 클릭 이벤트 연결
         btnLoadImages.Click += btnLoadImages_Click;
 
@@ -217,71 +219,109 @@ public partial class Form1 : Form
     }
     private void Form1_KeyDown(object sender, KeyEventArgs e)
     {
-        // 1. [Delete] 키가 눌렸을 때 기능 추가 ---------------------------------------
         if (e.KeyCode == Keys.Delete)
         {
-            e.SuppressKeyPress = true; // 윈도우 기본 띵~ 소리 방지
-
-            // 이미 구현해 두신 삭제 로직 실행!
-            // 버튼 클릭 이벤트를 코드로 직접 호출합니다.
+            e.SuppressKeyPress = true;
             btn_Del_Click(btn_Del, EventArgs.Empty);
             return;
         }
-        // -------------------------------------------------------------------------
 
-        // 2. 기존 스페이스바 로직 (그대로 유지)
+        // 2. 스페이스바가 아니면 무시
         if (e.KeyCode != Keys.Space)
             return;
 
-        e.SuppressKeyPress = true;
+        e.SuppressKeyPress = true; // 스페이스바 기본 스크롤 동작 방지
 
-        var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+        // 💡 현재 마우스 포커스나 선택이 복구 목록 리스트박스에 있는지 확인합니다.
+        bool isDeletedListActive = list_DeletedCheck.Focused || (list_DeletedCheck.SelectedIndices.Count > 0 && !list_FileCheck.Focused);
 
-        if (currentSource == null || currentSource.Count == 0)
-            return;
-
-        // 스페이스바 처음 누른 경우: 시작점 저장
-        if (spaceStartIndex == null)
+        if (isDeletedListActive)
         {
-            spaceStartIndex = currentIndex;
+            // =========================================================================
+            // 🔄 복구 목록 (list_DeletedCheck) 스페이스바 다중 선택 로직
+            // =========================================================================
+            if (deletedList == null || deletedList.Count == 0) return;
+
+            // 현재 복구 목록에서 선택된 인덱스 가져오기 (없으면 0)
+            int currentDeletedIdx = list_DeletedCheck.SelectedIndex;
+            if (currentDeletedIdx == -1) currentDeletedIdx = 0;
+
+            // 첫 번째 누름: 시작점 저장
+            if (spaceStartIndex == null)
+            {
+                spaceStartIndex = currentDeletedIdx;
+                list_DeletedCheck.ClearSelected();
+                list_DeletedCheck.SelectedIndex = currentDeletedIdx;
+                return;
+            }
+
+            // 두 번째 누름: 범위 선택 시작
+            int start = spaceStartIndex.Value;
+            int end = currentDeletedIdx;
+
+            if (start > end)
+            {
+                int temp = start;
+                start = end;
+                end = temp;
+            }
+
+            list_DeletedCheck.ClearSelected();
+
+            for (int i = start; i <= end; i++)
+            {
+                if (i >= 0 && i < list_DeletedCheck.Items.Count)
+                {
+                    list_DeletedCheck.SetSelected(i, true);
+                }
+            }
+
+            list_DeletedCheck.TopIndex = start;
+            spaceStartIndex = null; // 초기화
+        }
+        else
+        {
+            // =========================================================================
+            // 📑 기존 파일 목록 (list_FileCheck) 스페이스바 다중 선택 로직
+            // =========================================================================
+            var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+            if (currentSource == null || currentSource.Count == 0) return;
+
+            if (spaceStartIndex == null)
+            {
+                spaceStartIndex = currentIndex;
+                list_FileCheck.ClearSelected();
+                list_FileCheck.SelectedIndex = currentIndex;
+                return;
+            }
+
+            int start = spaceStartIndex.Value;
+            int end = currentIndex;
+
+            if (start > end)
+            {
+                int temp = start;
+                start = end;
+                end = temp;
+            }
+
+            autoTimer.Stop();
+            isAutoPlaying = false;
 
             list_FileCheck.ClearSelected();
-            list_FileCheck.SelectedIndex = currentIndex;
 
-            return;
-        }
-
-        // 스페이스바 두 번째 누른 경우: 시작점 ~ 현재 위치까지 선택
-        int start = spaceStartIndex.Value;
-        int end = currentIndex;
-
-        if (start > end)
-        {
-            int temp = start;
-            start = end;
-            end = temp;
-        }
-
-        // 자동재생 멈추기
-        autoTimer.Stop();
-        isAutoPlaying = false;
-
-        list_FileCheck.ClearSelected();
-
-        for (int i = start; i <= end; i++)
-        {
-            if (i >= 0 && i < list_FileCheck.Items.Count)
+            for (int i = start; i <= end; i++)
             {
-                list_FileCheck.SetSelected(i, true);
+                if (i >= 0 && i < list_FileCheck.Items.Count)
+                {
+                    list_FileCheck.SetSelected(i, true);
+                }
             }
+
+            list_FileCheck.TopIndex = start;
+            spaceStartIndex = null; // 초기화
         }
-
-        list_FileCheck.TopIndex = start;
-
-        // 다시 다음 범위 선택할 수 있게 초기화
-        spaceStartIndex = null;
     }
-
     private void btn_Restore_Click(object sender, EventArgs e)
     {
         if (deletedList == null || deletedList.Count == 0)
@@ -502,7 +542,6 @@ public partial class Form1 : Form
         bool isFiltered = false;
 
         // --- [ 1. 조향각(Angle) 솎아내기 조건 체크 ] ---
-        // 최소값(txtAngleF)과 최대값(txtAngleF2) 칸이 모두 입력되었을 때만 필터링을 수행합니다.
         if (!string.IsNullOrWhiteSpace(txtAngleF.Text) && !string.IsNullOrWhiteSpace(txtAngleF2.Text))
         {
             if (!float.TryParse(txtAngleF.Text, out float angleMin) ||
@@ -518,13 +557,11 @@ public partial class Form1 : Form
                 return;
             }
 
-            // 조건 범위에 만족하는 데이터만 필터링
             resultList = resultList.Where(d => d.Angle >= angleMin && d.Angle <= angleMax).ToList();
             isFiltered = true;
         }
 
         // --- [ 2. 스로틀(Throttle) 솎아내기 조건 체크 ] ---
-        // 최소값(txtThrottleF)과 최대값(txtThrottleF2) 칸이 모두 입력되었을 때만 필터링을 수행합니다.
         if (!string.IsNullOrWhiteSpace(txtThrottleF.Text) && !string.IsNullOrWhiteSpace(txtThrottleF2.Text))
         {
             if (!float.TryParse(txtThrottleF.Text, out float throttleMin) ||
@@ -540,7 +577,6 @@ public partial class Form1 : Form
                 return;
             }
 
-            // 앞서 걸러진 리스트에서 스로틀 조건까지 연속으로 만족하는 데이터 필터링 (교집합)
             resultList = resultList.Where(d => d.Throttle >= throttleMin && d.Throttle <= throttleMax).ToList();
             isFiltered = true;
         }
@@ -570,6 +606,7 @@ public partial class Form1 : Form
             DisplayCurrentData();  // 이미지 뷰어 화면 및 상단 데이터 라벨 최신화
             DrawGraph();           // 필터링된 데이터들만 가지고 하단 그래프 다시 그리기
 
+            // ✨ [원상복구] 찾기 버튼을 누를 때 뜨는 완료 알림창을 다시 활성화했습니다!
             MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 성공적으로 솎아냈습니다.", "솎아내기 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         else
@@ -643,14 +680,17 @@ public partial class Form1 : Form
             return;
         }
 
-        DialogResult result = MessageBox.Show(
-            $"선택하신 {selectedIndices.Count}개의 파일을 하드디스크와 카탈로그에서 '일괄 삭제'하시겠습니까?",
-            "다중 파일 삭제 경고",
-            MessageBoxButtons.YesNo,
-            MessageBoxIcon.Warning
-        );
-
-        if (result != DialogResult.OK && result != DialogResult.Yes) return;
+        // =========================================================================
+        // ❌ [수정 영역] 매번 물어보는 "다중 파일 삭제 경고"창을 주석 처리하여 건너뜁니다!
+        // =========================================================================
+        // DialogResult result = MessageBox.Show(
+        //     $"선택하신 {selectedIndices.Count}개의 파일을 하드디스크와 카탈로그에서 '일괄 삭제'하시겠습니까?",
+        //     "다중 파일 삭제 경고",
+        //     MessageBoxButtons.YesNo,
+        //     MessageBoxIcon.Warning
+        // );
+        // if (result != DialogResult.OK && result != DialogResult.Yes) return;
+        // =========================================================================
 
         // 1. 이미지 뷰어 프로세스 잠김 방지를 위해 PictureBox 이미지 해제 및 리소스 완전 비우기
         if (pic_DkScreen.Image != null)
@@ -746,7 +786,9 @@ public partial class Form1 : Form
             );
         }
 
-        MessageBox.Show($"총 {deleteCount}개의 이미지 파일과 카탈로그 로그가 일괄 삭제 및 동기화되었습니다.", "완료");
+        // 💡 작업 완료 알림창 대신 하단 라벨(lblStatus)에 조용히 진행 상황만 업데이트해 줍니다.
+        lblStatus.Text = $"🗑️ 데이터 {deleteCount}건 삭제 및 동기화 완료 (복구 목록에서 확인 가능)";
+        lblStatus.ForeColor = Color.OrangeRed;
 
         // 6. 후속 인덱스 바운더리 체크 및 UI 화면 재조정
         var checkSource = filteredList.Count > 0 ? filteredList : dataList;
