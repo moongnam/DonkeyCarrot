@@ -6,11 +6,20 @@ using System.IO;
 using System.Linq; // 🔍 LINQ 필터링 검색을 위해 추가
 using System.Windows.Forms;
 using System.Drawing;
+using System.Text.RegularExpressions;
+
 
 namespace DonkeyCarrot;
 
 public partial class Form1 : Form
 {
+    float currentEpochLoss = 0;
+    int epochCount = 0;
+    float previousTrainLoss = -1;
+    float previousValLoss = -1;
+    bool isUpdatingUI = false;
+    int? spaceStartIndex = null;
+
     // catalog 데이터를 저장할 리스트 (전체 원본 데이터)
     List<DonkeyData> dataList = new List<DonkeyData>();
 
@@ -40,14 +49,35 @@ public partial class Form1 : Form
 
     bool isAutoPlaying = false;
 
+    List<float> trainLossList = new List<float>();
+    List<float> valLossList = new List<float>();
 
+    private List<DonkeyData> deletedList = new List<DonkeyData>();
 
+    private string deletedCatalogPath;
+    private string deletedImagesPath;
+
+    string pilotModelPath = "";
+
+    Process pilotProcess = null;
+    StreamWriter pilotInput = null;
+    StreamReader pilotOutput = null;
 
     public Form1()
     {
         InitializeComponent();
 
         list_FileCheck.SelectionMode = SelectionMode.MultiExtended;
+        list_DeletedCheck.SelectionMode = SelectionMode.MultiExtended;
+
+        btn_Restore.Click += btn_Restore_Click;
+
+        this.KeyPreview = true;
+        this.KeyDown += Form1_KeyDown;
+
+        list_FileCheck.KeyDown += Form1_KeyDown;
+
+        list_DeletedCheck.KeyDown += Form1_KeyDown;
 
         // 기존 버튼 클릭 이벤트 연결
         btnLoadImages.Click += btnLoadImages_Click;
@@ -59,6 +89,15 @@ public partial class Form1 : Form
         // 체크 상태가 바뀌면 그래프 다시 그림
         chk_Angle.CheckedChanged += chk_Graph_CheckedChanged;
         chk_Throttle.CheckedChanged += chk_Graph_CheckedChanged;
+
+        //화면 크기 바뀔때마다 그래프 다시 호출
+        pic_Graph.SizeChanged += (s, e) =>
+        {
+            if (pic_Graph.Width > 0 && pic_Graph.Height > 0)
+            {
+                DrawGraph();
+            }
+        };
 
         // pic_Graph 외곽선
         pic_Graph.BorderStyle = BorderStyle.FixedSingle;
@@ -87,11 +126,15 @@ public partial class Form1 : Form
         cmbSpeed.SelectedItem = "1";
 
         cmbSpeed.SelectedIndexChanged += cmbSpeed_SelectedIndexChanged;// 속도 조절 콤보박스 이벤트 핸들러 연결
+
+        // 파일 불러오기 버튼 이벤트 연결
+        btnLoadPilot.Click += btnLoadPilot_Click;
     }
 
 
     private void DisplayCurrentData()
     {
+        isUpdatingUI = true;
         // 🔍 현재 활성화된 리스트(필터링 상태 반영) 기준으로 데이터 체크
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
@@ -112,19 +155,29 @@ public partial class Form1 : Form
         lbl_AngleV.Text = currentData.Angle.ToString("F4");
         lbl_ThrottleV.Text = currentData.Throttle.ToString("F4");
 
-        // 3. 하단 트랙바 슬라이더 위치 동기화
-        tbar_Dk.Maximum = currentSource.Count - 1;
-        tbar_Dk.Value = currentIndex;
+        // 3. 하단 커스텀 재생바 위치 동기화
+        myTrackbar1.Minimum = 0;
+        myTrackbar1.Maximum = currentSource.Count - 1;
+        myTrackbar1.Value = currentIndex;
 
         // 4. 왼쪽 리스트 선택 상태 동기화
         // ⚠️ 여러 개 드래그 선택 중일 때는 SelectedIndex를 강제로 변경하지 않음
         // 안 그러면 다중 선택이 풀려버림
-        if (list_FileCheck.Items.Count > currentIndex)
+        if (list_FileCheck.Items.Count > currentIndex && currentIndex >= 0)
         {
-            // 선택된 항목이 0개 또는 1개일 때만 현재 인덱스 동기화
-            if (list_FileCheck.SelectedIndices.Count <= 1)
+            if (isAutoPlaying)
             {
+                list_FileCheck.ClearSelected();
                 list_FileCheck.SelectedIndex = currentIndex;
+                list_FileCheck.TopIndex = currentIndex;
+            }
+            else
+            {
+                if (list_FileCheck.SelectedIndices.Count <= 1)
+                {
+                    list_FileCheck.ClearSelected();
+                    list_FileCheck.SelectedIndex = currentIndex;
+                }
             }
         }
 
@@ -150,6 +203,9 @@ public partial class Form1 : Form
 
             // PictureBox 크기에 맞게 자동 확대/축소
             pic_DkScreen.SizeMode = PictureBoxSizeMode.Zoom;
+
+            // 이미지 위에 조향각 선 그리기
+            DrawDirectionLine(currentData.Angle, actualImagePath);
         }
         else
         {
@@ -159,75 +215,316 @@ public partial class Form1 : Form
 
             pic_DkScreen.Image = null;
         }
+        isUpdatingUI = false;
     }
-
-
-    private void InitializeManagerEvents()
+    private void Form1_KeyDown(object sender, KeyEventArgs e)
     {
-        // > 버튼 : 다음 프레임 데이터로 1건 이동
-        btn_BigR.Click += (s, e) =>
+        if (e.KeyCode == Keys.Delete)
         {
-            var currentSource = filteredList.Count > 0 ? filteredList : dataList;
-            if (currentIndex < currentSource.Count - 1) { currentIndex++; DisplayCurrentData(); }
-        };
+            e.SuppressKeyPress = true;
+            btn_Del_Click(btn_Del, EventArgs.Empty);
+            return;
+        }
 
-        // < 버튼 : 이전 프레임 데이터로 1건 이동
-        btn_BigL.Click += (s, e) =>
+        // 2. 스페이스바가 아니면 무시
+        if (e.KeyCode != Keys.Space)
+            return;
+
+        e.SuppressKeyPress = true; // 스페이스바 기본 스크롤 동작 방지
+
+        // 💡 현재 마우스 포커스나 선택이 복구 목록 리스트박스에 있는지 확인합니다.
+        bool isDeletedListActive = list_DeletedCheck.Focused || (list_DeletedCheck.SelectedIndices.Count > 0 && !list_FileCheck.Focused);
+
+        if (isDeletedListActive)
         {
-            if (currentIndex > 0) { currentIndex--; DisplayCurrentData(); }
-        };
+            // =========================================================================
+            // 🔄 복구 목록 (list_DeletedCheck) 스페이스바 다중 선택 로직
+            // =========================================================================
+            if (deletedList == null || deletedList.Count == 0) return;
 
-        // tbar_Dk : 트랙바 슬라이더 드래그 시 인덱스 변경 연동
-        tbar_Dk.Scroll += (s, e) =>
-        {
-            currentIndex = tbar_Dk.Value;
-            DisplayCurrentData();
-        };
+            // 현재 복구 목록에서 선택된 인덱스 가져오기 (없으면 0)
+            int currentDeletedIdx = list_DeletedCheck.SelectedIndex;
+            if (currentDeletedIdx == -1) currentDeletedIdx = 0;
 
-        // 리스트 선택 이벤트
-        list_FileCheck.SelectedIndexChanged += (s, e) =>
-        {
-            // 자동재생 중에는 수동 선택 막기
-            if (isAutoPlaying) return;
-
-            // ⚠️ 여러 개 선택 중일 때는
-            // 현재 이미지 이동 및 자동 동기화 중단
-            // 안 그러면 드래그 선택할 때 화면이 계속 바뀜
-            if (list_FileCheck.SelectedIndices.Count != 1)
-                return;
-
-            // 정상적으로 1개만 선택된 경우
-            if (list_FileCheck.SelectedIndex != -1 &&
-                list_FileCheck.SelectedIndex != currentIndex)
+            // 첫 번째 누름: 시작점 저장
+            if (spaceStartIndex == null)
             {
-                currentIndex = list_FileCheck.SelectedIndex;
-
-                // 현재 선택된 이미지 표시
-                DisplayCurrentData();
+                spaceStartIndex = currentDeletedIdx;
+                list_DeletedCheck.ClearSelected();
+                list_DeletedCheck.SelectedIndex = currentDeletedIdx;
+                return;
             }
-        };
-        // 찾기, 초기화, 삭제 버튼 이벤트 바인딩
-        btn_Find.Click += btn_Find_Click;
-        btn_Retry.Click += btn_Retry_Click;
-        btn_Del.Click += btn_Del_Click;
+
+            // 두 번째 누름: 범위 선택 시작
+            int start = spaceStartIndex.Value;
+            int end = currentDeletedIdx;
+
+            if (start > end)
+            {
+                int temp = start;
+                start = end;
+                end = temp;
+            }
+
+            list_DeletedCheck.ClearSelected();
+
+            for (int i = start; i <= end; i++)
+            {
+                if (i >= 0 && i < list_DeletedCheck.Items.Count)
+                {
+                    list_DeletedCheck.SetSelected(i, true);
+                }
+            }
+
+            list_DeletedCheck.TopIndex = start;
+            spaceStartIndex = null; // 초기화
+        }
+        else
+        {
+            // =========================================================================
+            // 📑 기존 파일 목록 (list_FileCheck) 스페이스바 다중 선택 로직
+            // =========================================================================
+            var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+            if (currentSource == null || currentSource.Count == 0) return;
+
+            if (spaceStartIndex == null)
+            {
+                spaceStartIndex = currentIndex;
+                list_FileCheck.ClearSelected();
+                list_FileCheck.SelectedIndex = currentIndex;
+                return;
+            }
+
+            int start = spaceStartIndex.Value;
+            int end = currentIndex;
+
+            if (start > end)
+            {
+                int temp = start;
+                start = end;
+                end = temp;
+            }
+
+            autoTimer.Stop();
+            isAutoPlaying = false;
+
+            list_FileCheck.ClearSelected();
+
+            for (int i = start; i <= end; i++)
+            {
+                if (i >= 0 && i < list_FileCheck.Items.Count)
+                {
+                    list_FileCheck.SetSelected(i, true);
+                }
+            }
+
+            list_FileCheck.TopIndex = start;
+            spaceStartIndex = null; // 초기화
+        }
+    }
+    private void btn_Restore_Click(object sender, EventArgs e)
+    {
+        if (deletedList == null || deletedList.Count == 0)
+        {
+            MessageBox.Show("복구할 파일이 없습니다.", "알림");
+            return;
+        }
+
+        var selectedIndices = list_DeletedCheck.SelectedIndices.Cast<int>().ToList();
+
+        if (selectedIndices.Count == 0)
+        {
+            MessageBox.Show("복구할 파일을 선택해주세요.", "알림");
+            return;
+        }
+
+        DialogResult result = MessageBox.Show(
+            $"선택하신 {selectedIndices.Count}개의 파일을 복구하시겠습니까?",
+            "파일 복구 확인",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question
+        );
+
+        if (result != DialogResult.Yes)
+            return;
+
+        selectedIndices.Sort();
+        selectedIndices.Reverse();
+
+        int restoreCount = 0;
+
+        foreach (int idx in selectedIndices)
+        {
+            if (idx < 0 || idx >= deletedList.Count)
+                continue;
+
+            DonkeyData restoreData = deletedList[idx];
+            string imageName = Path.GetFileName(restoreData.ImagePath);
+
+            string deletedImagePath = Path.Combine(deletedImagesPath, imageName);
+
+            string imagesFolderPath = Path.Combine(tubPath, "images");
+            string restoreImagePath = Path.Combine(imagesFolderPath, imageName);
+
+            try
+            {
+                if (!Directory.Exists(imagesFolderPath))
+                {
+                    Directory.CreateDirectory(imagesFolderPath);
+                }
+
+                if (File.Exists(deletedImagePath))
+                {
+                    if (File.Exists(restoreImagePath))
+                    {
+                        File.Delete(restoreImagePath);
+                    }
+
+                    File.Move(deletedImagePath, restoreImagePath);
+                }
+
+                dataList.Add(restoreData);
+                imageList.Add(restoreImagePath);
+
+                deletedList.RemoveAt(idx);
+                list_DeletedCheck.Items.RemoveAt(idx);
+
+                restoreCount++;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"파일 복구 실패 ({imageName}): {ex.Message}");
+            }
+        }
+
+        dataList = dataList
+            .OrderBy(d =>
+            {
+                string fileName = Path.GetFileName(d.ImagePath);
+                string number = fileName.Split('_')[0];
+                return int.Parse(number);
+            })
+            .ToList();
+
+        try
+        {
+            RewriteCatalog();
+            RewriteDeletedCatalog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"복구 후 카탈로그 저장 중 오류가 발생했습니다:\n{ex.Message}",
+                "오류",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
+        }
+
+        UpdateFileList();
+
+        currentIndex = dataList.Count > 0 ? dataList.Count - 1 : 0;
+
+        DisplayCurrentData();
+        DrawGraph();
+
+        MessageBox.Show($"{restoreCount}개의 파일이 복구되었습니다.", "복구 완료");
     }
 
+
+
+    private void InitializeTrash()
+    {
+        deletedCatalogPath = Path.Combine(tubPath, "deleted_catalog.catalog");
+        deletedImagesPath = Path.Combine(tubPath, "deleted_images");
+
+        if (!Directory.Exists(deletedImagesPath))
+        {
+            Directory.CreateDirectory(deletedImagesPath);
+        }
+
+        LoadDeletedCatalog();
+    }
+
+    private void LoadDeletedCatalog()
+    {
+        deletedList.Clear();
+        list_DeletedCheck.Items.Clear();
+
+        if (!File.Exists(deletedCatalogPath))
+            return;
+
+        string[] lines = File.ReadAllLines(deletedCatalogPath);
+
+        foreach (string line in lines)
+        {
+            try
+            {
+                DonkeyData data =
+                    JsonConvert.DeserializeObject<DonkeyData>(line);
+
+                if (data != null)
+                {
+                    deletedList.Add(data);
+
+                    list_DeletedCheck.Items.Add(
+                        Path.GetFileName(data.ImagePath)
+                    );
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+    //휴지통 목록을 실제 파일에 저장
+    private void RewriteDeletedCatalog()
+    {
+        if (string.IsNullOrEmpty(deletedCatalogPath))
+            return;
+
+        using (StreamWriter sw = new StreamWriter(deletedCatalogPath, false, System.Text.Encoding.UTF8))
+        {
+            foreach (var data in deletedList)
+            {
+                string jsonLine = JsonConvert.SerializeObject(data);
+                sw.WriteLine(jsonLine);
+            }
+        }
+    }
+
+    //현재 살아있는 데이터만 다시 저장
+    private void RewriteCatalog()
+    {
+        if (string.IsNullOrEmpty(tubPath) || !Directory.Exists(tubPath))
+            return;
+
+        string[] catalogFiles = Directory.GetFiles(tubPath, "*.catalog", SearchOption.TopDirectoryOnly);
+
+        if (catalogFiles.Length == 0)
+            return;
+
+        string targetCatalogPath = catalogFiles[0];
+
+        using (StreamWriter sw = new StreamWriter(targetCatalogPath, false, System.Text.Encoding.UTF8))
+        {
+            foreach (var data in dataList)
+            {
+                string jsonLine = JsonConvert.SerializeObject(data);
+                sw.WriteLine(jsonLine);
+            }
+        }
+    }
 
     // 카탈로그 파일 로드가 성공한 직후 호출하여 왼쪽 리스트박스를 가득 채우는 함수
     private void UpdateFileList()
     {
         list_FileCheck.Items.Clear();
-        filteredList.Clear(); // 🔍 원본 파일 리스트를 볼 때는 필터링 리스트 비우기
 
-        foreach (var data in dataList)
+        for (int i = 0; i < dataList.Count; i++)
         {
-            list_FileCheck.Items.Add(Path.GetFileName(data.ImagePath));
-        }
-
-        if (dataList.Count > 0)
-        {
-            currentIndex = 0;
-            DisplayCurrentData();
+            string fileName = Path.GetFileName(dataList[i].ImagePath);
+            list_FileCheck.Items.Add($"{i + 1:D4}. {fileName}");
         }
     }
 
@@ -245,7 +542,6 @@ public partial class Form1 : Form
         bool isFiltered = false;
 
         // --- [ 1. 조향각(Angle) 솎아내기 조건 체크 ] ---
-        // 최소값(txtAngleF)과 최대값(txtAngleF2) 칸이 모두 입력되었을 때만 필터링을 수행합니다.
         if (!string.IsNullOrWhiteSpace(txtAngleF.Text) && !string.IsNullOrWhiteSpace(txtAngleF2.Text))
         {
             if (!float.TryParse(txtAngleF.Text, out float angleMin) ||
@@ -261,13 +557,11 @@ public partial class Form1 : Form
                 return;
             }
 
-            // 조건 범위에 만족하는 데이터만 필터링
             resultList = resultList.Where(d => d.Angle >= angleMin && d.Angle <= angleMax).ToList();
             isFiltered = true;
         }
 
         // --- [ 2. 스로틀(Throttle) 솎아내기 조건 체크 ] ---
-        // 최소값(txtThrottleF)과 최대값(txtThrottleF2) 칸이 모두 입력되었을 때만 필터링을 수행합니다.
         if (!string.IsNullOrWhiteSpace(txtThrottleF.Text) && !string.IsNullOrWhiteSpace(txtThrottleF2.Text))
         {
             if (!float.TryParse(txtThrottleF.Text, out float throttleMin) ||
@@ -283,7 +577,6 @@ public partial class Form1 : Form
                 return;
             }
 
-            // 앞서 걸러진 리스트에서 스로틀 조건까지 연속으로 만족하는 데이터 필터링 (교집합)
             resultList = resultList.Where(d => d.Throttle >= throttleMin && d.Throttle <= throttleMax).ToList();
             isFiltered = true;
         }
@@ -302,15 +595,18 @@ public partial class Form1 : Form
 
             // 왼쪽 UI 파일 목록 리스트박스 갱신
             list_FileCheck.Items.Clear();
-            foreach (var d in filteredList)
+
+            for (int i = 0; i < filteredList.Count; i++)
             {
-                list_FileCheck.Items.Add(Path.GetFileName(d.ImagePath));
+                string fileName = Path.GetFileName(filteredList[i].ImagePath);
+                list_FileCheck.Items.Add($"{i + 1:D4}. {fileName}");
             }
 
             currentIndex = 0;       // 인덱스를 필터링된 데이터의 첫 번째 항목으로 설정
             DisplayCurrentData();  // 이미지 뷰어 화면 및 상단 데이터 라벨 최신화
             DrawGraph();           // 필터링된 데이터들만 가지고 하단 그래프 다시 그리기
 
+            // ✨ [원상복구] 찾기 버튼을 누를 때 뜨는 완료 알림창을 다시 활성화했습니다!
             MessageBox.Show($"조건에 맞는 데이터 {filteredList.Count}건을 성공적으로 솎아냈습니다.", "솎아내기 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         else
@@ -369,7 +665,11 @@ public partial class Form1 : Form
     {
         var currentSource = filteredList.Count > 0 ? filteredList : dataList;
 
-        if (currentSource == null || currentSource.Count == 0) return;
+        if (currentSource == null || currentSource.Count == 0)
+        {
+            isUpdatingUI = false;
+            return;
+        }
 
         // 🔍 현재 ListBox에서 선택된 항목들의 인덱스 모음 가져오기
         var selectedIndices = list_FileCheck.SelectedIndices.Cast<int>().ToList();
@@ -380,14 +680,17 @@ public partial class Form1 : Form
             return;
         }
 
-        DialogResult result = MessageBox.Show(
-            $"선택하신 {selectedIndices.Count}개의 파일을 하드디스크와 카탈로그에서 완전히 '일괄 삭제'하시겠습니까?",
-            "다중 파일 영구 삭제 경고",
-            MessageBoxButtons.YesNo,
-            MessageBoxIcon.Warning
-        );
-
-        if (result != DialogResult.OK && result != DialogResult.Yes) return;
+        // =========================================================================
+        // ❌ [수정 영역] 매번 물어보는 "다중 파일 삭제 경고"창을 주석 처리하여 건너뜁니다!
+        // =========================================================================
+        // DialogResult result = MessageBox.Show(
+        //     $"선택하신 {selectedIndices.Count}개의 파일을 하드디스크와 카탈로그에서 '일괄 삭제'하시겠습니까?",
+        //     "다중 파일 삭제 경고",
+        //     MessageBoxButtons.YesNo,
+        //     MessageBoxIcon.Warning
+        // );
+        // if (result != DialogResult.OK && result != DialogResult.Yes) return;
+        // =========================================================================
 
         // 1. 이미지 뷰어 프로세스 잠김 방지를 위해 PictureBox 이미지 해제 및 리소스 완전 비우기
         if (pic_DkScreen.Image != null)
@@ -409,69 +712,83 @@ public partial class Form1 : Form
             DonkeyData targetData = currentSource[idx];
             string imageName = Path.GetFileName(targetData.ImagePath);
 
-            // 2. 물리 이미지 파일 삭제
-            string actualImagePath = imageList.Find(path => path.Contains(imageName));
+            // 2. 물리 이미지 파일을 삭제하지 않고 deleted_images 폴더로 이동
+            string actualImagePath = imageList.Find(path => Path.GetFileName(path) == imageName);
+
             try
             {
                 if (!string.IsNullOrEmpty(actualImagePath) && File.Exists(actualImagePath))
                 {
-                    File.Delete(actualImagePath);
+                    string deletedImagePath = Path.Combine(deletedImagesPath, imageName);
+
+                    // deleted_images 안에 같은 이름 파일이 있으면 덮어쓰기 방지용으로 삭제
+                    if (File.Exists(deletedImagePath))
+                    {
+                        File.Delete(deletedImagePath);
+                    }
+
+                    File.Move(actualImagePath, deletedImagePath);
+
                     imageList.Remove(actualImagePath);
                 }
             }
             catch (Exception ex)
             {
-                // 특정 파일 처리 중 프로세스 락 등이 걸리면 로그만 남기고 다음 파일로 넘어감
-                Debug.WriteLine($"파일 삭제 실패 ({imageName}): {ex.Message}");
+                Debug.WriteLine($"파일 휴지통 이동 실패 ({imageName}): {ex.Message}");
             }
+
+            // 복구용 휴지통 리스트에 추가
+            deletedList.Add(targetData);
+            list_DeletedCheck.Items.Add(imageName);
 
             // 3. 메모리 데이터 리스트에서 삭제 진행 (양쪽 동시 동기화)
             if (filteredList.Count > 0)
             {
                 filteredList.Remove(targetData);
             }
-            dataList.Remove(targetData); // 원본 소스에서도 완전히 파괴
+            dataList.Remove(targetData); // 원본 목록에서는 제거
 
             // 4. UI 리스트박스 항목 제거
             list_FileCheck.Items.RemoveAt(idx);
             deleteCount++;
         }
+        deletedList = deletedList
+            .OrderBy(d =>
+            {
+                string fileName = Path.GetFileName(d.ImagePath);
+                string number = fileName.Split('_')[0];
+                return int.Parse(number);
+            })
+            .ToList();
 
-        // 5. ✨ 실제 하드디스크의 .catalog 텍스트 파일 내용 일괄 동기화 업데이트
+        list_DeletedCheck.Items.Clear();
+
+        foreach (var data in deletedList)
+        {
+            list_DeletedCheck.Items.Add(
+                Path.GetFileName(data.ImagePath)
+            );
+        }
+
+        // 5. 카탈로그 파일 저장
         try
         {
-            if (!string.IsNullOrEmpty(tubPath) && Directory.Exists(tubPath))
-            {
-                string[] catalogFiles = Directory.GetFiles(tubPath, "*.catalog", SearchOption.TopDirectoryOnly);
-
-                if (catalogFiles.Length > 0)
-                {
-                    string targetCatalogPath = catalogFiles[0];
-
-                    // 혼선을 줄이기 위해 서브 카탈로그 파일들은 정리
-                    for (int i = 1; i < catalogFiles.Length; i++)
-                    {
-                        if (File.Exists(catalogFiles[i])) File.Delete(catalogFiles[i]);
-                    }
-
-                    // 남은 데이터를 청소된 클린 상태로 카탈로그에 다시 밀어 넣기
-                    using (StreamWriter sw = new StreamWriter(targetCatalogPath, false, System.Text.Encoding.UTF8))
-                    {
-                        foreach (var data in dataList)
-                        {
-                            string jsonLine = JsonConvert.SerializeObject(data);
-                            sw.WriteLine(jsonLine);
-                        }
-                    }
-                }
-            }
+            RewriteCatalog();          // 현재 살아있는 데이터 저장
+            RewriteDeletedCatalog();   // 휴지통 데이터 저장
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"카탈로그 동기화 중 오류가 발생했습니다:\n{ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(
+                $"카탈로그 동기화 중 오류가 발생했습니다:\n{ex.Message}",
+                "오류",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
         }
 
-        MessageBox.Show($"총 {deleteCount}개의 이미지 파일과 카탈로그 로그가 일괄 삭제 및 동기화되었습니다.", "완료");
+        // 💡 작업 완료 알림창 대신 하단 라벨(lblStatus)에 조용히 진행 상황만 업데이트해 줍니다.
+        lblStatus.Text = $"🗑️ 데이터 {deleteCount}건 삭제 및 동기화 완료 (복구 목록에서 확인 가능)";
+        lblStatus.ForeColor = Color.OrangeRed;
 
         // 6. 후속 인덱스 바운더리 체크 및 UI 화면 재조정
         var checkSource = filteredList.Count > 0 ? filteredList : dataList;
@@ -487,6 +804,8 @@ public partial class Form1 : Form
                 currentIndex = checkSource.Count - 1;
             }
         }
+        // 파일 리스트 업데이트
+        UpdateFileList();
 
         DisplayCurrentData();
         DrawGraph(); // 변동된 상태로 그래프 최신화
@@ -506,7 +825,14 @@ public partial class Form1 : Form
             filteredList.Clear(); // 초기화
 
             string dataFolderPath = fbd.SelectedPath;
+
+            lbl_CatalogRoute.Text = Path.GetFileName(dataFolderPath);
+            toolTipPath.SetToolTip(lbl_CatalogRoute, dataFolderPath);
+
             tubPath = dataFolderPath;
+
+            // 휴지통 준비
+            InitializeTrash();
 
             DirectoryInfo currentDir = new DirectoryInfo(dataFolderPath);
 
@@ -716,7 +1042,78 @@ public partial class Form1 : Form
             g.DrawString("user/throttle", font, Brushes.Blue, graphRight - 90, graphTop - 8);
         }
 
+        if (pic_Graph.Image != null)
+        {
+            pic_Graph.Image.Dispose();
+        }
+
         pic_Graph.Image = bmp;
+    }
+
+    private void DrawTrainGraph()
+    {
+        if (trainLossList.Count < 2)
+            return;
+
+        Bitmap bmp = new Bitmap(
+            picTrainGraph.Width,
+            picTrainGraph.Height);
+
+        Graphics g = Graphics.FromImage(bmp);
+
+        g.Clear(Color.White);
+
+        float minLoss = float.MaxValue;
+        float maxLoss = float.MinValue;
+
+        foreach (float v in trainLossList)
+        {
+            minLoss = Math.Min(minLoss, v);
+            maxLoss = Math.Max(maxLoss, v);
+        }
+
+        foreach (float v in valLossList)
+        {
+            minLoss = Math.Min(minLoss, v);
+            maxLoss = Math.Max(maxLoss, v);
+        }
+
+        if (maxLoss == minLoss)
+            maxLoss += 0.001f;
+
+        for (int i = 0; i < trainLossList.Count - 1; i++)
+        {
+            int x1 = i * bmp.Width / (trainLossList.Count - 1);
+            int x2 = (i + 1) * bmp.Width / (trainLossList.Count - 1);
+
+            int y1 = bmp.Height -
+                     (int)((trainLossList[i] - minLoss) /
+                     (maxLoss - minLoss) * bmp.Height);
+
+            int y2 = bmp.Height -
+                     (int)((trainLossList[i + 1] - minLoss) /
+                     (maxLoss - minLoss) * bmp.Height);
+
+            g.DrawLine(Pens.Red, x1, y1, x2, y2);
+        }
+
+        for (int i = 0; i < valLossList.Count - 1; i++)
+        {
+            int x1 = i * bmp.Width / (valLossList.Count - 1);
+            int x2 = (i + 1) * bmp.Width / (valLossList.Count - 1);
+
+            int y1 = bmp.Height -
+                     (int)((valLossList[i] - minLoss) /
+                     (maxLoss - minLoss) * bmp.Height);
+
+            int y2 = bmp.Height -
+                     (int)((valLossList[i + 1] - minLoss) /
+                     (maxLoss - minLoss) * bmp.Height);
+
+            g.DrawLine(Pens.Blue, x1, y1, x2, y2);
+        }
+
+        picTrainGraph.Image = bmp;
     }
 
     // 이미지 폴더 불러오기 버튼
@@ -730,6 +1127,9 @@ public partial class Form1 : Form
         if (fbd.ShowDialog() == DialogResult.OK)
         {
             imageList.Clear();
+
+            lbl_ImageRoute.Text = Path.GetFileName(fbd.SelectedPath);
+            toolTipPath.SetToolTip(lbl_ImageRoute, fbd.SelectedPath);
 
             string[] jpgFiles = Directory.GetFiles(fbd.SelectedPath, "*.jpg");
             string[] pngFiles = Directory.GetFiles(fbd.SelectedPath, "*.png");
@@ -748,6 +1148,12 @@ public partial class Form1 : Form
 
     private void btnTrain_Click_1(object sender, EventArgs e)
     {
+        trainLossList.Clear();
+        valLossList.Clear();
+        picTrainGraph.Image = null;
+        epochCount = 0;
+        txtTrainLoss.Clear();
+
         txtLog.Clear();
 
         string linuxProjectPath = projectPath
@@ -763,14 +1169,12 @@ public partial class Form1 : Form
 
         psi.FileName = @"C:\Windows\System32\wsl.exe";
 
-        string condaEnv = txtCondaEnv.Text;
+        string condaEnv = GetPilotCondaEnv();
 
-        if (string.IsNullOrWhiteSpace(condaEnv) || condaEnv == "conda 환경 이름 입력")
+        if (string.IsNullOrWhiteSpace(condaEnv))
         {
             lblStatus.Text = "상태: 대기 중";
             lblStatus.ForeColor = Color.White;
-
-            MessageBox.Show("Conda 환경 이름을 입력하세요.");
             return;
         }
 
@@ -794,18 +1198,74 @@ public partial class Form1 : Form
             {
                 string log = ev.Data;
 
+                bool graphUpdated = false;
+
+                Match valMatch = Regex.Match(ev.Data, @"val_loss:\s*([0-9.]+)");
+                if (valMatch.Success)
+                {
+                    float valLoss = float.Parse(valMatch.Groups[1].Value);
+
+                    string trainStatus = "";
+                    string valStatus = "";
+
+                    if (previousTrainLoss >= 0)
+                    {
+                        trainStatus = currentEpochLoss < previousTrainLoss
+                            ? " (개선됨 ↑)"
+                            : " (악화됨 ↓)";
+                    }
+
+                    if (previousValLoss >= 0)
+                    {
+                        valStatus = valLoss < previousValLoss
+                            ? " (개선됨 ↑)"
+                            : " (악화됨 ↓)";
+                    }
+
+                    valLossList.Add(valLoss);
+                    epochCount++;
+
+                    graphUpdated = true;
+
+                    if (!IsDisposed && txtTrainLoss.IsHandleCreated)
+                    {
+                        Invoke(new Action(() =>
+                        {
+                            txtTrainLoss.AppendText(
+                                $"[학습 {epochCount}회차]" +
+                                Environment.NewLine +
+                                $"▶ 학습 오차값 : {currentEpochLoss:F4}{trainStatus}" +
+                                Environment.NewLine +
+                                $"▶ 검증 오차값 : {valLoss:F4}{valStatus}" +
+                                Environment.NewLine +
+                                Environment.NewLine);
+                        }));
+                    }
+
+                    previousTrainLoss = currentEpochLoss;
+                    previousValLoss = valLoss;
+                }
+
+                Match trainMatch = Regex.Match(ev.Data, @"loss:\s*([0-9.]+)");
+                if (trainMatch.Success && !ev.Data.Contains("val_loss"))
+                {
+                    currentEpochLoss = float.Parse(trainMatch.Groups[1].Value);
+
+                    trainLossList.Add(currentEpochLoss);
+
+                    graphUpdated = true;
+                }
+
                 // 깨지는 문자 제거
                 log = log.Replace("\b", "");
                 log = log.Replace("\r", "");
 
                 log = log.Replace("Epoch", "학습");
 
-                // 검증 loss 먼저 변환
                 log = log.Replace("val_n_outputs0_loss", "검증 조향각 오차값");
                 log = log.Replace("val_n_outputs1_loss", "검증 속도 오차값");
                 log = log.Replace("val_loss", "검증 전체 오차값");
 
-                // 일반 loss 변환
                 log = log.Replace("n_outputs0_loss", "조향각 오차값");
                 log = log.Replace("n_outputs1_loss", "속도 오차값");
                 log = log.Replace("loss", "전체 오차값");
@@ -821,11 +1281,21 @@ public partial class Form1 : Form
                 log = log.Replace("improved from", "개선됨:");
                 log = log.Replace("saving model to", "모델 저장 위치:");
 
-                if (!IsDisposed && txtLog.IsHandleCreated)
+                if (!IsDisposed && !Disposing && IsHandleCreated && txtLog.IsHandleCreated)
                 {
-                    Invoke(new Action(() =>
+                    BeginInvoke(new Action(() =>
                     {
+                        if (IsDisposed || Disposing)
+                            return;
+
                         txtLog.AppendText(log + Environment.NewLine);
+
+                        if (graphUpdated &&
+                            picTrainGraph != null &&
+                            picTrainGraph.IsHandleCreated)
+                        {
+                            DrawTrainGraph();
+                        }
                     }));
                 }
             }
@@ -844,10 +1314,13 @@ public partial class Form1 : Form
                 log = log.Replace("failed", "실패");
                 log = log.Replace("No module named", "모듈을 찾을 수 없습니다");
 
-                if (!IsDisposed && txtLog.IsHandleCreated)
+                if (!IsDisposed && !Disposing && IsHandleCreated && txtLog.IsHandleCreated)
                 {
-                    Invoke(new Action(() =>
+                    BeginInvoke(new Action(() =>
                     {
+                        if (IsDisposed || Disposing)
+                            return;
+
                         txtLog.AppendText(log + Environment.NewLine);
                     }));
                 }
@@ -868,6 +1341,8 @@ public partial class Form1 : Form
 
                     if (exitCode == 0 || exitCode == 130)
                     {
+                        DrawTrainGraph();
+
                         txtLog.AppendText("학습이 완료되었습니다." + Environment.NewLine);
                         lblStatus.Text = "상태: 학습 완료";
                         lblStatus.ForeColor = Color.DodgerBlue;
@@ -977,9 +1452,7 @@ public partial class Form1 : Form
         }
     }
 
-    private void tbar_Dk_Load(object sender, EventArgs e)
-    {
-    }
+
 
     private void tabPage1_Click(object sender, EventArgs e)
     {
@@ -1005,7 +1478,356 @@ public partial class Form1 : Form
     {
 
     }
+
+    private void label2_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    // 이미지 뷰어에 조향각 방향선 그리는 함수
+    private void DrawDirectionLine(float realAngle, string imagePath)
+    {
+        if (pic_DkScreen.Image == null)
+            return;
+
+        Bitmap bmp = new Bitmap(pic_DkScreen.Image);
+
+        using (Graphics g = Graphics.FromImage(bmp))
+        {
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            int startX = bmp.Width / 2;
+            int startY = bmp.Height - 45;
+
+            DrawOneDirection(g, startX, startY, realAngle, Color.Lime);
+
+            float? predictedAngle = GetPilotPredictionFast(imagePath);
+
+            if (predictedAngle.HasValue)
+            {
+                DrawOneDirection(g, startX, startY, predictedAngle.Value, Color.Red);
+            }
+        }
+
+        pic_DkScreen.Image.Dispose();
+        pic_DkScreen.Image = bmp;
+    }
+
+    // 한 방향선 그리는 함수 (실제 또는 예측)
+    private void DrawOneDirection(Graphics g, int startX, int startY, float angle, Color color)
+    {
+        using (Pen pen = new Pen(color, 7))
+        using (Brush brush = new SolidBrush(color))
+        {
+            int endX = startX + (int)(angle * 300);
+            int endY = startY - 170;
+
+            g.DrawLine(pen, startX, startY, endX, endY);
+            g.FillEllipse(brush, endX - 10, endY - 10, 20, 20);
+        }
+    }
+
+    // 학습된 모델 불러오기 버튼
+    private void btnLoadPilot_Click(object sender, EventArgs e)
+    {
+        OpenFileDialog ofd = new OpenFileDialog();
+        ofd.Filter = "H5 Model (*.h5)|*.h5";
+
+        if (ofd.ShowDialog() == DialogResult.OK)
+        {
+            pilotModelPath = ofd.FileName;
+
+            StartPilotServer();
+
+            MessageBox.Show("학습 모델 선택 및 예측 서버 시작 완료");
+        }
+    }
+
+    // 예측 파일이 없으면 생성하는 함수
+    private void EnsurePredictServerFile()
+    {
+        if (string.IsNullOrEmpty(projectPath))
+            return;
+
+        string serverPath = Path.Combine(projectPath, "predict_server.py");
+
+        if (File.Exists(serverPath))
+            return;
+
+        string code = @"
+import sys
+import numpy as np
+from PIL import Image
+from tensorflow.keras.models import load_model
+
+model_path = sys.argv[1]
+model = load_model(model_path)
+
+print('READY', flush=True)
+
+while True:
+    line = sys.stdin.readline()
+
+    if not line:
+        break
+
+    image_path = line.strip()
+
+    if image_path == 'EXIT':
+        break
+
+    try:
+        img = Image.open(image_path).convert('RGB')
+        img = img.resize((160, 120))
+        arr = np.array(img).astype(np.float32) / 255.0
+        arr = np.expand_dims(arr, axis=0)
+
+        pred = model.predict(arr, verbose=0)
+
+        if isinstance(pred, list):
+            angle = float(pred[0][0][0])
+            throttle = float(pred[1][0][0])
+        else:
+            angle = float(pred[0][0])
+            throttle = float(pred[0][1])
+
+        print(f'{angle},{throttle}', flush=True)
+
+    except Exception as e:
+        print('ERROR:' + str(e), flush=True)
+";
+
+        File.WriteAllText(serverPath, code);
+    }
+
+    // WSL에서 모델로 예측을 수행하는 함수
+    private float? GetPilotPredictionFast(string imagePath)
+    {
+        if (pilotProcess == null || pilotProcess.HasExited)
+            return null;
+
+        string linuxImagePath = imagePath
+            .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
+            .Replace("\\", "/");
+
+        pilotInput.WriteLine(linuxImagePath);
+        pilotInput.Flush();
+
+        string result = pilotOutput.ReadLine();
+
+        if (string.IsNullOrWhiteSpace(result))
+            return null;
+
+        if (result.StartsWith("ERROR:"))
+        {
+            txtLog.AppendText("예측 오류: " + result + Environment.NewLine);
+            return null;
+        }
+
+        string[] parts = result.Split(',');
+
+        if (parts.Length >= 1 && float.TryParse(parts[0], out float angle))
+            return angle;
+
+        return null;
+    }
+
+    // 예측 서버 시작 함수
+    private void StartPilotServer()
+    {
+        if (string.IsNullOrEmpty(projectPath) || string.IsNullOrEmpty(pilotModelPath))
+            return;
+
+        EnsurePredictServerFile();
+
+        if (pilotProcess != null && !pilotProcess.HasExited)
+        {
+            try
+            {
+                pilotInput.WriteLine("EXIT");
+                pilotProcess.Kill();
+            }
+            catch { }
+        }
+
+        string linuxProjectPath = projectPath
+            .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
+            .Replace("\\", "/");
+
+        string linuxModelPath = pilotModelPath
+            .Replace(@"\\wsl.localhost\Ubuntu-22.04", "")
+            .Replace("\\", "/");
+
+        string condaEnv = GetPilotCondaEnv();
+
+        if (string.IsNullOrWhiteSpace(condaEnv))
+            return;
+
+        ProcessStartInfo psi = new ProcessStartInfo();
+        psi.FileName = @"C:\Windows\System32\wsl.exe";
+        psi.Arguments =
+            $"-d Ubuntu-22.04 -- bash -c \"cd '{linuxProjectPath}' && source ~/miniconda3/bin/activate {condaEnv} && python predict_server.py '{linuxModelPath}'\"";
+
+        psi.RedirectStandardInput = true;
+        psi.RedirectStandardOutput = true;
+        psi.RedirectStandardError = true;
+        psi.UseShellExecute = false;
+        psi.CreateNoWindow = true;
+
+        pilotProcess = Process.Start(psi);
+        pilotInput = pilotProcess.StandardInput;
+        pilotOutput = pilotProcess.StandardOutput;
+
+        string ready = pilotOutput.ReadLine();
+
+        if (ready != "READY")
+        {
+            txtLog.AppendText("예측 서버 시작 실패" + Environment.NewLine);
+        }
+    }
+
+    // Conda 환경 이름을 한 곳에서만 입력받도록 하는 함수
+    private string GetPilotCondaEnv()
+    {
+        string env1 = txtCondaEnv.Text.Trim();
+        string env2 = txtCondaEnv2.Text.Trim();
+
+        bool hasEnv1 = !string.IsNullOrWhiteSpace(env1) &&
+                       env1 != "conda 환경 이름 입력";
+
+        bool hasEnv2 = !string.IsNullOrWhiteSpace(env2) &&
+                       env2 != "conda 환경 이름 입력";
+
+        // 둘 다 비어있음
+        if (!hasEnv1 && !hasEnv2)
+        {
+            MessageBox.Show("Conda 환경 이름을 입력하세요.");
+            return "";
+        }
+
+        // 둘 다 입력됨
+        if (hasEnv1 && hasEnv2)
+        {
+            // 값이 다르면 오류
+            if (env1 != env2)
+            {
+                MessageBox.Show(
+                    "Conda 환경 이름이 서로 다릅니다.\n같은 이름을 입력하거나 한 곳만 입력하세요."
+                );
+                return "";
+            }
+
+            // 값이 같으면 사용
+            return env1;
+        }
+
+        // 하나만 입력된 경우
+        return hasEnv1 ? env1 : env2;
+    }
+
+    private void txtCondaEnv2_Enter(object sender, EventArgs e)
+    {
+        if (txtCondaEnv2.Text == "conda 환경 이름 입력")
+        {
+            txtCondaEnv2.Text = "";
+            txtCondaEnv2.ForeColor = Color.Black;
+        }
+    }
+
+    private void txtCondaEnv2_Leave(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(txtCondaEnv2.Text))
+        {
+            txtCondaEnv2.Text = "conda 환경 이름 입력";
+            txtCondaEnv2.ForeColor = Color.Silver;
+        }
+    }
+
+
+    private void InitializeManagerEvents()
+    {
+        // > 버튼 : 다음 프레임 데이터로 1건 이동
+        btn_BigR.Click += (s, e) =>
+        {
+            var currentSource = filteredList.Count > 0 ? filteredList : dataList;
+            if (currentIndex < currentSource.Count - 1) { currentIndex++; DisplayCurrentData(); }
+        };
+
+        // < 버튼 : 이전 프레임 데이터로 1건 이동
+        btn_BigL.Click += (s, e) =>
+        {
+            if (currentIndex > 0) { currentIndex--; DisplayCurrentData(); }
+        };
+
+        // myTrackbar1 : 커스텀 재생바 드래그 시 인덱스 변경 연동
+        myTrackbar1.ValueChanged += (s, e) =>
+        {
+            if (isUpdatingUI) return;
+
+            currentIndex = myTrackbar1.Value;
+            DisplayCurrentData();
+        };
+
+        // 리스트 선택 이벤트
+        list_FileCheck.SelectedIndexChanged += (s, e) =>
+        {
+            // 자동재생 중에는 수동 선택 막기
+            if (isAutoPlaying) return;
+
+            // ⚠️ 여러 개 선택 중일 때는 현재 이미지 이동 및 자동 동기화 중단
+            if (list_FileCheck.SelectedIndices.Count != 1)
+                return;
+
+            // 정상적으로 1개만 선택된 경우
+            if (list_FileCheck.SelectedIndex != -1 &&
+                list_FileCheck.SelectedIndex != currentIndex)
+            {
+                currentIndex = list_FileCheck.SelectedIndex;
+
+                // 현재 선택된 이미지 표시
+                DisplayCurrentData();
+            }
+        };
+
+        // 찾기, 초기화, 삭제 버튼 이벤트 바인딩
+        btn_Find.Click += btn_Find_Click;
+        btn_Retry.Click += btn_Retry_Click;
+        btn_Del.Click += btn_Del_Click;
+
+
+    }
+
+    private void chk_Throttle_CheckedChanged(object sender, EventArgs e)
+    {
+
+    }
+
+    private void btn_BigL_Click_1(object sender, EventArgs e)
+    {
+
+    }
+
+    private void lblAngle_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void pictureBox1_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void lbl_To2_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void lblThrottle_Click(object sender, EventArgs e)
+    {
+
+    }
 }
+
 
 // catalog JSON 데이터 클래스
 public class DonkeyData
