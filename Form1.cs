@@ -1821,6 +1821,11 @@ while True:
     {
 
     }
+
+    private void lblThrottle_Click(object sender, EventArgs e)
+    {
+
+    }
 }
 
 
