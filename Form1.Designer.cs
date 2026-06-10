@@ -29,8 +29,10 @@ partial class Form1
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
+        System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
         tabcMain = new TabControl();
         tabPage1 = new TabPage();
+        Carrotpic = new PictureBox();
         label4 = new Label();
         label3 = new Label();
         lbl_ImageRoute = new Label();
@@ -89,6 +91,7 @@ partial class Form1
         toolTipPath = new ToolTip(components);
         tabcMain.SuspendLayout();
         tabPage1.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)Carrotpic).BeginInit();
         ((System.ComponentModel.ISupportInitialize)pic_Graph).BeginInit();
         ((System.ComponentModel.ISupportInitialize)pic_DkScreen).BeginInit();
         tab_Trash.SuspendLayout();
@@ -113,6 +116,7 @@ partial class Form1
         // tabPage1
         // 
         tabPage1.BackColor = Color.Orange;
+        tabPage1.Controls.Add(Carrotpic);
         tabPage1.Controls.Add(label4);
         tabPage1.Controls.Add(label3);
         tabPage1.Controls.Add(lbl_ImageRoute);
@@ -161,11 +165,24 @@ partial class Form1
         tabPage1.Text = "메인";
         tabPage1.Click += tabPage1_Click;
         // 
+        // Carrotpic
+        // 
+        Carrotpic.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        Carrotpic.BackColor = Color.Transparent;
+        Carrotpic.Image = (Image)resources.GetObject("Carrotpic.Image");
+        Carrotpic.Location = new Point(1038, 463);
+        Carrotpic.Name = "Carrotpic";
+        Carrotpic.Size = new Size(118, 109);
+        Carrotpic.SizeMode = PictureBoxSizeMode.Zoom;
+        Carrotpic.TabIndex = 53;
+        Carrotpic.TabStop = false;
+        Carrotpic.Click += pictureBox1_Click;
+        // 
         // label4
         // 
         label4.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         label4.AutoSize = true;
-        label4.Location = new Point(289, 46);
+        label4.Location = new Point(307, 55);
         label4.Margin = new Padding(2, 0, 2, 0);
         label4.Name = "label4";
         label4.Size = new Size(102, 15);
@@ -176,7 +193,7 @@ partial class Form1
         // 
         label3.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         label3.AutoSize = true;
-        label3.Location = new Point(289, 29);
+        label3.Location = new Point(307, 38);
         label3.Margin = new Padding(2, 0, 2, 0);
         label3.Name = "label3";
         label3.Size = new Size(114, 15);
@@ -226,10 +243,10 @@ partial class Form1
         btnLoadPilot.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         btnLoadPilot.BackColor = Color.LimeGreen;
         btnLoadPilot.FlatStyle = FlatStyle.Flat;
-        btnLoadPilot.Location = new Point(538, 31);
+        btnLoadPilot.Location = new Point(556, 40);
         btnLoadPilot.Margin = new Padding(2);
         btnLoadPilot.Name = "btnLoadPilot";
-        btnLoadPilot.Size = new Size(104, 32);
+        btnLoadPilot.Size = new Size(98, 32);
         btnLoadPilot.TabIndex = 47;
         btnLoadPilot.Text = "학습 모델 선택";
         btnLoadPilot.UseVisualStyleBackColor = false;
@@ -239,7 +256,7 @@ partial class Form1
         btn_Restore.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btn_Restore.BackColor = Color.LimeGreen;
         btn_Restore.FlatStyle = FlatStyle.Flat;
-        btn_Restore.Location = new Point(1084, 443);
+        btn_Restore.Location = new Point(949, 540);
         btn_Restore.Margin = new Padding(2);
         btn_Restore.Name = "btn_Restore";
         btn_Restore.Size = new Size(72, 32);
@@ -251,19 +268,22 @@ partial class Form1
         // 
         lbl_To2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         lbl_To2.AutoSize = true;
-        lbl_To2.Location = new Point(863, 479);
+        lbl_To2.Font = new Font("맑은 고딕", 14.25F, FontStyle.Bold);
+        lbl_To2.Location = new Point(885, 500);
         lbl_To2.Name = "lbl_To2";
-        lbl_To2.Size = new Size(15, 15);
+        lbl_To2.Size = new Size(26, 25);
         lbl_To2.TabIndex = 45;
         lbl_To2.Text = "~";
+        lbl_To2.Click += lbl_To2_Click;
         // 
         // lbl_To
         // 
         lbl_To.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         lbl_To.AutoSize = true;
-        lbl_To.Location = new Point(863, 452);
+        lbl_To.Font = new Font("맑은 고딕", 14.25F, FontStyle.Bold);
+        lbl_To.Location = new Point(885, 473);
         lbl_To.Name = "lbl_To";
-        lbl_To.Size = new Size(15, 15);
+        lbl_To.Size = new Size(26, 25);
         lbl_To.TabIndex = 44;
         lbl_To.Text = "~";
         // 
@@ -272,7 +292,7 @@ partial class Form1
         lblThrottle.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         lblThrottle.AutoSize = true;
         lblThrottle.Font = new Font("맑은 고딕", 12F, FontStyle.Bold, GraphicsUnit.Point, 129);
-        lblThrottle.Location = new Point(711, 474);
+        lblThrottle.Location = new Point(711, 499);
         lblThrottle.Name = "lblThrottle";
         lblThrottle.Size = new Size(64, 21);
         lblThrottle.TabIndex = 43;
@@ -283,7 +303,7 @@ partial class Form1
         lblAngle.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         lblAngle.AutoSize = true;
         lblAngle.Font = new Font("맑은 고딕", 12F, FontStyle.Bold, GraphicsUnit.Point, 129);
-        lblAngle.Location = new Point(707, 450);
+        lblAngle.Location = new Point(707, 475);
         lblAngle.Name = "lblAngle";
         lblAngle.Size = new Size(68, 21);
         lblAngle.TabIndex = 42;
@@ -294,20 +314,20 @@ partial class Form1
         // 
         txtThrottleF2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         txtThrottleF2.BackColor = Color.White;
-        txtThrottleF2.Location = new Point(884, 478);
+        txtThrottleF2.Location = new Point(917, 503);
         txtThrottleF2.Margin = new Padding(3, 2, 3, 2);
         txtThrottleF2.Name = "txtThrottleF2";
-        txtThrottleF2.Size = new Size(75, 23);
+        txtThrottleF2.Size = new Size(95, 23);
         txtThrottleF2.TabIndex = 41;
         // 
         // txtAngleF2
         // 
         txtAngleF2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         txtAngleF2.BackColor = Color.White;
-        txtAngleF2.Location = new Point(884, 448);
+        txtAngleF2.Location = new Point(917, 473);
         txtAngleF2.Margin = new Padding(3, 2, 3, 2);
         txtAngleF2.Name = "txtAngleF2";
-        txtAngleF2.Size = new Size(75, 23);
+        txtAngleF2.Size = new Size(95, 23);
         txtAngleF2.TabIndex = 39;
         // 
         // btn_Find
@@ -316,7 +336,7 @@ partial class Form1
         btn_Find.BackColor = Color.LimeGreen;
         btn_Find.BackgroundImageLayout = ImageLayout.None;
         btn_Find.FlatStyle = FlatStyle.Flat;
-        btn_Find.Location = new Point(711, 517);
+        btn_Find.Location = new Point(710, 541);
         btn_Find.Margin = new Padding(3, 2, 3, 2);
         btn_Find.Name = "btn_Find";
         btn_Find.Size = new Size(74, 32);
@@ -329,7 +349,7 @@ partial class Form1
         chk_Throttle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         chk_Throttle.AutoSize = true;
         chk_Throttle.Font = new Font("맑은 고딕", 12F, FontStyle.Regular, GraphicsUnit.Point, 129);
-        chk_Throttle.Location = new Point(129, 423);
+        chk_Throttle.Location = new Point(147, 432);
         chk_Throttle.Margin = new Padding(3, 2, 3, 2);
         chk_Throttle.Name = "chk_Throttle";
         chk_Throttle.Size = new Size(61, 25);
@@ -344,7 +364,7 @@ partial class Form1
         chk_Angle.AutoSize = true;
         chk_Angle.Font = new Font("맑은 고딕", 12F, FontStyle.Regular, GraphicsUnit.Point, 129);
         chk_Angle.ForeColor = SystemColors.ActiveCaptionText;
-        chk_Angle.Location = new Point(38, 423);
+        chk_Angle.Location = new Point(56, 432);
         chk_Angle.Margin = new Padding(3, 2, 3, 2);
         chk_Angle.Name = "chk_Angle";
         chk_Angle.Size = new Size(77, 25);
@@ -356,7 +376,7 @@ partial class Form1
         // 
         pic_Graph.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         pic_Graph.BackColor = Color.White;
-        pic_Graph.Location = new Point(32, 452);
+        pic_Graph.Location = new Point(50, 461);
         pic_Graph.Margin = new Padding(3, 2, 3, 2);
         pic_Graph.Name = "pic_Graph";
         pic_Graph.Size = new Size(610, 119);
@@ -367,27 +387,27 @@ partial class Form1
         // 
         txtThrottleF.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         txtThrottleF.BackColor = Color.White;
-        txtThrottleF.Location = new Point(783, 478);
+        txtThrottleF.Location = new Point(781, 503);
         txtThrottleF.Margin = new Padding(3, 2, 3, 2);
         txtThrottleF.Name = "txtThrottleF";
-        txtThrottleF.Size = new Size(75, 23);
+        txtThrottleF.Size = new Size(98, 23);
         txtThrottleF.TabIndex = 35;
         // 
         // txtAngleF
         // 
         txtAngleF.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         txtAngleF.BackColor = Color.White;
-        txtAngleF.Location = new Point(783, 448);
+        txtAngleF.Location = new Point(781, 473);
         txtAngleF.Margin = new Padding(3, 2, 3, 2);
         txtAngleF.Name = "txtAngleF";
-        txtAngleF.Size = new Size(75, 23);
+        txtAngleF.Size = new Size(98, 23);
         txtAngleF.TabIndex = 34;
         // 
         // myTrackbar1
         // 
         myTrackbar1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         myTrackbar1.BackColor = Color.Transparent;
-        myTrackbar1.Location = new Point(32, 386);
+        myTrackbar1.Location = new Point(50, 395);
         myTrackbar1.Margin = new Padding(4);
         myTrackbar1.Maximum = 100;
         myTrackbar1.Minimum = 0;
@@ -399,10 +419,10 @@ partial class Form1
         // lblTitle
         // 
         lblTitle.AutoSize = true;
-        lblTitle.Font = new Font("Microsoft Sans Serif", 26.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-        lblTitle.Location = new Point(32, 22);
+        lblTitle.Font = new Font("한컴 말랑말랑 Bold", 26.2499962F, FontStyle.Bold, GraphicsUnit.Point, 0);
+        lblTitle.Location = new Point(41, 27);
         lblTitle.Name = "lblTitle";
-        lblTitle.Size = new Size(244, 39);
+        lblTitle.Size = new Size(261, 45);
         lblTitle.TabIndex = 32;
         lblTitle.Text = "DonkeyCarrot";
         lblTitle.Click += label3_Click;
@@ -412,7 +432,7 @@ partial class Form1
         cmbSpeed.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         cmbSpeed.BackColor = Color.White;
         cmbSpeed.FormattingEnabled = true;
-        cmbSpeed.Location = new Point(408, 35);
+        cmbSpeed.Location = new Point(426, 44);
         cmbSpeed.Margin = new Padding(3, 2, 3, 2);
         cmbSpeed.Name = "cmbSpeed";
         cmbSpeed.Size = new Size(116, 23);
@@ -424,7 +444,7 @@ partial class Form1
         lbl_ThrottleV.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_ThrottleV.AutoSize = true;
         lbl_ThrottleV.Font = new Font("맑은 고딕", 15F);
-        lbl_ThrottleV.Location = new Point(596, 418);
+        lbl_ThrottleV.Location = new Point(614, 427);
         lbl_ThrottleV.Name = "lbl_ThrottleV";
         lbl_ThrottleV.Size = new Size(23, 28);
         lbl_ThrottleV.TabIndex = 19;
@@ -436,7 +456,7 @@ partial class Form1
         lbl_Throttle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_Throttle.AutoSize = true;
         lbl_Throttle.Font = new Font("맑은 고딕", 15F);
-        lbl_Throttle.Location = new Point(538, 418);
+        lbl_Throttle.Location = new Point(556, 427);
         lbl_Throttle.Name = "lbl_Throttle";
         lbl_Throttle.Size = new Size(56, 28);
         lbl_Throttle.TabIndex = 18;
@@ -447,7 +467,7 @@ partial class Form1
         lbl_AngleV.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_AngleV.AutoSize = true;
         lbl_AngleV.Font = new Font("맑은 고딕", 15F);
-        lbl_AngleV.Location = new Point(475, 418);
+        lbl_AngleV.Location = new Point(493, 427);
         lbl_AngleV.Name = "lbl_AngleV";
         lbl_AngleV.Size = new Size(23, 28);
         lbl_AngleV.TabIndex = 17;
@@ -458,7 +478,7 @@ partial class Form1
         lbl_Angle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_Angle.AutoSize = true;
         lbl_Angle.Font = new Font("맑은 고딕", 15F);
-        lbl_Angle.Location = new Point(404, 418);
+        lbl_Angle.Location = new Point(422, 427);
         lbl_Angle.Name = "lbl_Angle";
         lbl_Angle.Size = new Size(76, 28);
         lbl_Angle.TabIndex = 16;
@@ -469,7 +489,7 @@ partial class Form1
         lbl_FrameV.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_FrameV.AutoSize = true;
         lbl_FrameV.Font = new Font("맑은 고딕", 15F);
-        lbl_FrameV.Location = new Point(332, 418);
+        lbl_FrameV.Location = new Point(350, 427);
         lbl_FrameV.Name = "lbl_FrameV";
         lbl_FrameV.Size = new Size(23, 28);
         lbl_FrameV.TabIndex = 15;
@@ -480,7 +500,7 @@ partial class Form1
         lbl_Frame.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lbl_Frame.AutoSize = true;
         lbl_Frame.Font = new Font("맑은 고딕", 15F);
-        lbl_Frame.Location = new Point(258, 418);
+        lbl_Frame.Location = new Point(276, 427);
         lbl_Frame.Name = "lbl_Frame";
         lbl_Frame.Size = new Size(76, 28);
         lbl_Frame.TabIndex = 14;
@@ -491,7 +511,7 @@ partial class Form1
         btn_Retry.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btn_Retry.BackColor = Color.LimeGreen;
         btn_Retry.FlatStyle = FlatStyle.Flat;
-        btn_Retry.Location = new Point(791, 517);
+        btn_Retry.Location = new Point(790, 541);
         btn_Retry.Margin = new Padding(3, 2, 3, 2);
         btn_Retry.Name = "btn_Retry";
         btn_Retry.Size = new Size(74, 32);
@@ -504,7 +524,7 @@ partial class Form1
         btn_Del.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btn_Del.BackColor = Color.LimeGreen;
         btn_Del.FlatStyle = FlatStyle.Flat;
-        btn_Del.Location = new Point(1002, 443);
+        btn_Del.Location = new Point(870, 541);
         btn_Del.Margin = new Padding(3, 2, 3, 2);
         btn_Del.Name = "btn_Del";
         btn_Del.Size = new Size(74, 31);
@@ -517,7 +537,7 @@ partial class Form1
         btn_SmallR.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btn_SmallR.BackColor = Color.LimeGreen;
         btn_SmallR.FlatStyle = FlatStyle.Flat;
-        btn_SmallR.Location = new Point(404, 346);
+        btn_SmallR.Location = new Point(422, 355);
         btn_SmallR.Margin = new Padding(3, 2, 3, 2);
         btn_SmallR.Name = "btn_SmallR";
         btn_SmallR.Size = new Size(164, 34);
@@ -531,7 +551,7 @@ partial class Form1
         btn_Stop.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         btn_Stop.BackColor = Color.LimeGreen;
         btn_Stop.FlatStyle = FlatStyle.Flat;
-        btn_Stop.Location = new Point(258, 346);
+        btn_Stop.Location = new Point(276, 355);
         btn_Stop.Margin = new Padding(3, 2, 3, 2);
         btn_Stop.Name = "btn_Stop";
         btn_Stop.Size = new Size(140, 34);
@@ -545,7 +565,7 @@ partial class Form1
         btn_SmallL.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         btn_SmallL.BackColor = Color.LimeGreen;
         btn_SmallL.FlatStyle = FlatStyle.Flat;
-        btn_SmallL.Location = new Point(104, 346);
+        btn_SmallL.Location = new Point(122, 355);
         btn_SmallL.Margin = new Padding(3, 2, 3, 2);
         btn_SmallL.Name = "btn_SmallL";
         btn_SmallL.Size = new Size(148, 34);
@@ -560,7 +580,7 @@ partial class Form1
         btn_BigL.BackColor = Color.LimeGreen;
         btn_BigL.FlatStyle = FlatStyle.Flat;
         btn_BigL.Font = new Font("맑은 고딕", 36F, FontStyle.Regular, GraphicsUnit.Point, 129);
-        btn_BigL.Location = new Point(32, 72);
+        btn_BigL.Location = new Point(50, 81);
         btn_BigL.Margin = new Padding(3, 2, 3, 2);
         btn_BigL.Name = "btn_BigL";
         btn_BigL.Size = new Size(62, 308);
@@ -575,7 +595,7 @@ partial class Form1
         btn_BigR.BackColor = Color.LimeGreen;
         btn_BigR.FlatStyle = FlatStyle.Flat;
         btn_BigR.Font = new Font("맑은 고딕", 36F, FontStyle.Regular, GraphicsUnit.Point, 129);
-        btn_BigR.Location = new Point(574, 72);
+        btn_BigR.Location = new Point(592, 81);
         btn_BigR.Margin = new Padding(3, 2, 3, 2);
         btn_BigR.Name = "btn_BigR";
         btn_BigR.Size = new Size(62, 308);
@@ -587,7 +607,7 @@ partial class Form1
         // 
         pic_DkScreen.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         pic_DkScreen.BackColor = SystemColors.InfoText;
-        pic_DkScreen.Location = new Point(106, 72);
+        pic_DkScreen.Location = new Point(124, 81);
         pic_DkScreen.Margin = new Padding(3, 2, 3, 2);
         pic_DkScreen.Name = "pic_DkScreen";
         pic_DkScreen.Size = new Size(459, 270);
@@ -630,7 +650,7 @@ partial class Form1
         tab_Trash.Margin = new Padding(2);
         tab_Trash.Name = "tab_Trash";
         tab_Trash.SelectedIndex = 0;
-        tab_Trash.Size = new Size(453, 370);
+        tab_Trash.Size = new Size(453, 396);
         tab_Trash.TabIndex = 46;
         // 
         // tabPage2
@@ -640,7 +660,7 @@ partial class Form1
         tabPage2.Margin = new Padding(2);
         tabPage2.Name = "tabPage2";
         tabPage2.Padding = new Padding(2);
-        tabPage2.Size = new Size(445, 342);
+        tabPage2.Size = new Size(445, 368);
         tabPage2.TabIndex = 0;
         tabPage2.Text = "파일 목록";
         tabPage2.UseVisualStyleBackColor = true;
@@ -653,7 +673,7 @@ partial class Form1
         list_FileCheck.Location = new Point(3, 3);
         list_FileCheck.Margin = new Padding(3, 2, 3, 2);
         list_FileCheck.Name = "list_FileCheck";
-        list_FileCheck.Size = new Size(442, 319);
+        list_FileCheck.Size = new Size(442, 364);
         list_FileCheck.TabIndex = 13;
         list_FileCheck.SelectedIndexChanged += list_FileCheck_SelectedIndexChanged;
         // 
@@ -664,7 +684,7 @@ partial class Form1
         tabPage3.Margin = new Padding(2);
         tabPage3.Name = "tabPage3";
         tabPage3.Padding = new Padding(2);
-        tabPage3.Size = new Size(445, 342);
+        tabPage3.Size = new Size(445, 368);
         tabPage3.TabIndex = 1;
         tabPage3.Text = "복구";
         tabPage3.UseVisualStyleBackColor = true;
@@ -756,7 +776,7 @@ partial class Form1
         btnStopTrain.FlatStyle = FlatStyle.Flat;
         btnStopTrain.Font = new Font("맑은 고딕", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
         btnStopTrain.ForeColor = SystemColors.ControlLightLight;
-        btnStopTrain.Location = new Point(815, 40);
+        btnStopTrain.Location = new Point(815, 46);
         btnStopTrain.Margin = new Padding(3, 2, 3, 2);
         btnStopTrain.Name = "btnStopTrain";
         btnStopTrain.Size = new Size(109, 45);
@@ -770,7 +790,7 @@ partial class Form1
         lblStatus.AutoSize = true;
         lblStatus.Font = new Font("맑은 고딕", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
         lblStatus.ForeColor = Color.White;
-        lblStatus.Location = new Point(472, 50);
+        lblStatus.Location = new Point(508, 61);
         lblStatus.Name = "lblStatus";
         lblStatus.Size = new Size(140, 25);
         lblStatus.TabIndex = 4;
@@ -779,18 +799,18 @@ partial class Form1
         // lblConda
         // 
         lblConda.AutoSize = true;
-        lblConda.Font = new Font("맑은 고딕", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
+        lblConda.Font = new Font("맑은 고딕", 18F, FontStyle.Bold, GraphicsUnit.Point, 129);
         lblConda.ForeColor = SystemColors.ActiveCaptionText;
-        lblConda.Location = new Point(102, 50);
+        lblConda.Location = new Point(101, 54);
         lblConda.Name = "lblConda";
-        lblConda.Size = new Size(165, 25);
+        lblConda.Size = new Size(205, 32);
         lblConda.TabIndex = 3;
         lblConda.Text = "Conda 환경 이름:";
         // 
         // txtCondaEnv
         // 
         txtCondaEnv.ForeColor = Color.Silver;
-        txtCondaEnv.Location = new Point(273, 50);
+        txtCondaEnv.Location = new Point(309, 61);
         txtCondaEnv.Margin = new Padding(3, 2, 3, 2);
         txtCondaEnv.Multiline = true;
         txtCondaEnv.Name = "txtCondaEnv";
@@ -821,7 +841,7 @@ partial class Form1
         btnTrain.FlatStyle = FlatStyle.Flat;
         btnTrain.Font = new Font("맑은 고딕", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
         btnTrain.ForeColor = SystemColors.ControlLightLight;
-        btnTrain.Location = new Point(937, 40);
+        btnTrain.Location = new Point(937, 46);
         btnTrain.Margin = new Padding(3, 2, 3, 2);
         btnTrain.Name = "btnTrain";
         btnTrain.Size = new Size(109, 45);
@@ -842,6 +862,7 @@ partial class Form1
         tabcMain.ResumeLayout(false);
         tabPage1.ResumeLayout(false);
         tabPage1.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)Carrotpic).EndInit();
         ((System.ComponentModel.ISupportInitialize)pic_Graph).EndInit();
         ((System.ComponentModel.ISupportInitialize)pic_DkScreen).EndInit();
         tab_Trash.ResumeLayout(false);
@@ -913,5 +934,6 @@ partial class Form1
     private ToolTip toolTipPath;
     private Label label4;
     private Label label3;
+    private PictureBox Carrotpic;
 }
 

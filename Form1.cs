@@ -1769,6 +1769,16 @@ while True:
     {
 
     }
+
+    private void pictureBox1_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void lbl_To2_Click(object sender, EventArgs e)
+    {
+
+    }
 }
 
 
