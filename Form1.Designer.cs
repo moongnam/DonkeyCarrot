@@ -356,7 +356,7 @@ partial class Form1
         chk_Throttle.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         chk_Throttle.AutoSize = true;
         chk_Throttle.Font = new Font("맑은 고딕", 12F, FontStyle.Regular, GraphicsUnit.Point, 129);
-        chk_Throttle.Location = new Point(113, 431);
+        chk_Throttle.Location = new Point(113, 425);
         chk_Throttle.Margin = new Padding(2);
         chk_Throttle.Name = "chk_Throttle";
         chk_Throttle.Size = new Size(61, 25);
@@ -371,7 +371,7 @@ partial class Form1
         chk_Angle.AutoSize = true;
         chk_Angle.Font = new Font("맑은 고딕", 12F, FontStyle.Regular, GraphicsUnit.Point, 129);
         chk_Angle.ForeColor = SystemColors.ActiveCaptionText;
-        chk_Angle.Location = new Point(32, 431);
+        chk_Angle.Location = new Point(32, 425);
         chk_Angle.Margin = new Padding(2);
         chk_Angle.Name = "chk_Angle";
         chk_Angle.Size = new Size(77, 25);
