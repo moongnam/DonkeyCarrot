@@ -2,6 +2,11 @@
 
 - 사용한 컨트롤: Label, Button, CheckBox, TrackBar, ComboBox, ListBox, TabControl, TabPage
 
+- 개발도구: Visual Studio 2026
+- 운영체제: Ubuntu 22.04 LTS
+- 프로그래밍 언어: C#
+
+
  - 구현 내용 및 기능 설명
 
 ![메인화면](img/main-1.png)
